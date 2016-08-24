@@ -1,4 +1,4 @@
-@interface RootViewController: UIViewController {
+@interface RootViewController: UIViewController<UITableViewDelegate, UITableViewDataSource> {
     UILabel*helloLabel;
     UITableView*tableView;
 }
