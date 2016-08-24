@@ -1,0 +1,9 @@
+Package: co.jalby.teleportme
+Name: TeleportMe
+Depends: 
+Version: 0.0.1
+Architecture: iphoneos-arm
+Description: An awesome application!
+Maintainer: Jalby
+Author: Jalby
+Section: Utilities
