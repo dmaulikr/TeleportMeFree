@@ -74,17 +74,17 @@
                     playerTextField.returnKeyType = UIReturnKeyNext;
                     break;
                 case 1:
-                    playerTextField.placeHolder = @"Longitude";
+                    playerTextField.placeholder = @"Longitude";
                     playerTextField.keyboardType = UIKeyboardTypeDefault;
                     playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
                     playerTextField.returnKeyType = UIReturnKeyNext;
                     break;
                 case 2:
-                    playerTextField.placeHolder = @"Altitude";
+                    playerTextField.placeholder = @"Altitude";
                     playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
                     break;
                 default:
-                    playerTextField.placeHolder = @"ERROR";
+                    playerTextField.placeholder = @"ERROR";
                     break;
 
 
