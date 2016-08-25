@@ -17,20 +17,18 @@
     tableView.delegate = self;
     tableView.dataSource = self;
 
-    tableView.backgroundColor = [UIColor cyanColor];
+    tableView.backgroundColor = [UIColor purpleColor];
 
     // add to canvas
     [self.view addSubview:tableView];
 }
 
 #pragma mark - UITableViewDataSource
-// number of section(s), now I assume there is only 1 section
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)theTableView
 {
     return 2;
 }
 
-// number of row in the section, I assume there is only 1 row
 - (NSInteger)tableView:(UITableView *)theTableView numberOfRowsInSection:(NSInteger)section
 {
     if (section == 0)
@@ -38,21 +36,7 @@
     else return 1;
 }
 
-/* the cell will be returned to the tableView
-- (UITableViewCell *)tableView:(UITableView *)theTableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
-{
-    static NSString *cellIdentifier = @"HistoryCell";
- 
-    UITableViewCell *cell = (UITableViewCell *)[theTableView dequeueReusableCellWithIdentifier:cellIdentifier];
-    if (cell == nil) {
-        cell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:cellIdentifier];
-    }
-    // Just want to test, so I hardcode the data
-    cell.textLabel.text = @"Testing";
-
-    return cell;
-}*/
-
+//thank you google.com and stackoverflow, couldn't have done it without u
 - (UITableViewCell *)tableView:(UITableView *)theTableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     static NSString *kCellIdentifier = @"HistoryCell";
 
@@ -98,8 +82,7 @@
             playerTextField.clearButtonMode = UITextFieldViewModeNever; // no clear 'x' button to the right
             [playerTextField setEnabled: YES];
             [cell.contentView addSubview:playerTextField];
-            
-
+            playerTextField.delegate = self;
             [playerTextField release];
     }
     
@@ -108,7 +91,7 @@
         [onSwitch setOnTintColor:[UIColor redColor]];
         
         if ([indexPath row] == 0) {
-            cell.textLabel.text = @"On/Off";
+            cell.textLabel.text = @"Teleport!";
         }
         else {
             cell.textLabel.text = @"ERROR!!";
@@ -138,7 +121,17 @@ if ([indexPath section] == 0) { // Latitude and Longitude
 return cell;    
 }
 
+- (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string {
+    NSLog(@"This function was called to change text");
+    // Prevent crashing undo bug – see note below.
+    if(range.length + range.location > textField.text.length)
+    {
+        return NO;
+    }
 
+    NSUInteger newLength = [textField.text length] + [string length] - range.length;
+    return newLength <= 5;
+}
 #pragma mark - UITableViewDelegate
 // when user tap the row, what action you want to perform
 - (void)tableView:(UITableView *)theTableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath

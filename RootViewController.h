@@ -1,5 +1,7 @@
-@interface RootViewController: UIViewController<UITableViewDelegate, UITableViewDataSource> {
+@interface RootViewController: UIViewController<UITableViewDelegate, UITableViewDataSource, UITextFieldDelegate> {
     UILabel*helloLabel;
     UITableView*tableView;
+
 }
+
 @end
