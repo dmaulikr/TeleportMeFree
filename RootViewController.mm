@@ -36,10 +36,10 @@
 // number of row in the section, I assume there is only 1 row
 - (NSInteger)tableView:(UITableView *)theTableView numberOfRowsInSection:(NSInteger)section
 {
-    return 1;
+    return 3;
 }
 
-// the cell will be returned to the tableView
+/* the cell will be returned to the tableView
 - (UITableViewCell *)tableView:(UITableView *)theTableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     static NSString *cellIdentifier = @"HistoryCell";
@@ -52,7 +52,69 @@
     cell.textLabel.text = @"Testing";
 
     return cell;
+}*/
+
+- (UITableViewCell *)tableView:(UITableView *)theTableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    static NSString *kCellIdentifier = @"HistoryCell";
+
+    UITableViewCell *cell = (UITableViewCell*) [theTableView dequeueReusableCellWithIdentifier:kCellIdentifier];
+    if (cell == nil) {
+        cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault 
+                                   reuseIdentifier:kCellIdentifier] autorelease];
+        cell.accessoryType = UITableViewCellAccessoryNone;
+
+        if ([indexPath section] == 0) { //Starting a new section
+            UITextField *playerTextField = [[UITextField alloc] initWithFrame:CGRectMake(110, 10, 185, 30)];
+            playerTextField.adjustsFontSizeToFitWidth = YES;
+            playerTextField.textColor = [UIColor blackColor];
+        if ([indexPath row] == 0) {
+            playerTextField.placeholder = @"Latitude";
+            playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
+            playerTextField.returnKeyType = UIReturnKeyNext;
+        }
+        else {
+            playerTextField.placeholder = @"Longitude";
+            playerTextField.keyboardType = UIKeyboardTypeDefault;
+            playerTextField.returnKeyType = UIReturnKeyDone;
+            playerTextField.secureTextEntry = YES;
+        }       
+        playerTextField.backgroundColor = [UIColor whiteColor];
+        playerTextField.autocorrectionType = UITextAutocorrectionTypeNo; // no auto correction support
+        playerTextField.autocapitalizationType = UITextAutocapitalizationTypeNone; // no auto capitalization support
+        playerTextField.textAlignment = UITextAlignmentLeft;
+        playerTextField.tag = 0;
+        //playerTextField.delegate = self;
+
+        playerTextField.clearButtonMode = UITextFieldViewModeNever; // no clear 'x' button to the right
+        [playerTextField setEnabled: YES];
+
+        [cell.contentView addSubview:playerTextField];
+
+        [playerTextField release];
+    }
 }
+if ([indexPath section] == 0) { // Latitude and Longitude
+    switch ([indexPath row]) {
+        case 0: 
+            cell.textLabel.text = @"Latitude"; 
+            break;
+        case 1: 
+            cell.textLabel.text = @"Longitude"; 
+            break;
+        case 2: 
+            cell.textLabel.text = @"Altitude"; 
+            break;
+        default: 
+            cell.textLabel.text = @"ERROR"; 
+            break;
+    }
+}
+else { // Login button section
+    cell.textLabel.text = @"Log in";
+}
+return cell;    
+}
+
 
 #pragma mark - UITableViewDelegate
 // when user tap the row, what action you want to perform
