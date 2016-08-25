@@ -10,9 +10,6 @@
         helloLabel.textAlignment = UITextAlignmentLeft;
         [self.view addSubview:helloLabel];
 
-        UISwitch *onSwitch = [[UISwitch alloc] initWithFrame: CGRectZero];
-        [self.view addSubview:onSwitch];
-
 // init table view
     tableView = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStylePlain];
 
@@ -30,13 +27,15 @@
 // number of section(s), now I assume there is only 1 section
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)theTableView
 {
-    return 1;
+    return 2;
 }
 
 // number of row in the section, I assume there is only 1 row
 - (NSInteger)tableView:(UITableView *)theTableView numberOfRowsInSection:(NSInteger)section
 {
-    return 4;
+    if (section == 0)
+        return 3;
+    else return 1;
 }
 
 /* the cell will be returned to the tableView
@@ -58,36 +57,35 @@
     static NSString *kCellIdentifier = @"HistoryCell";
 
     UITableViewCell *cell = (UITableViewCell*) [theTableView dequeueReusableCellWithIdentifier:kCellIdentifier];
+    
     if (cell == nil) {
         cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault 
                                    reuseIdentifier:kCellIdentifier] autorelease];
         cell.accessoryType = UITableViewCellAccessoryNone;
 
-        if ([indexPath section] == 0) { //Starting a new section
+        if ([indexPath section] == 0) { //Section for number inputs
             UITextField *playerTextField = [[UITextField alloc] initWithFrame:CGRectMake(110, 10, 185, 30)];
             playerTextField.adjustsFontSizeToFitWidth = YES;
             playerTextField.textColor = [UIColor blackColor];
             switch ([indexPath row]) {
                 case 0:
                     playerTextField.placeholder = @"Latitude";
-                    playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
+                    playerTextField.keyboardType = UIKeyboardTypeDecimalPad;
                     playerTextField.returnKeyType = UIReturnKeyNext;
                     break;
                 case 1:
                     playerTextField.placeholder = @"Longitude";
                     playerTextField.keyboardType = UIKeyboardTypeDefault;
-                    playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
+                    playerTextField.keyboardType = UIKeyboardTypeDecimalPad;
                     playerTextField.returnKeyType = UIReturnKeyNext;
                     break;
                 case 2:
                     playerTextField.placeholder = @"Altitude";
-                    playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
+                    playerTextField.keyboardType = UIKeyboardTypeDecimalPad;
                     break;
-                default:
+                case 3:
                     playerTextField.placeholder = @"ERROR";
                     break;
-
-
             }
             
             playerTextField.backgroundColor = [UIColor whiteColor];
@@ -99,12 +97,28 @@
 
             playerTextField.clearButtonMode = UITextFieldViewModeNever; // no clear 'x' button to the right
             [playerTextField setEnabled: YES];
-
             [cell.contentView addSubview:playerTextField];
+            
 
             [playerTextField release];
     }
+    
+    else { //Section for boolean inputs (UISwitches)
+        UISwitch *onSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(80, 10, 185, 30)];
+        [onSwitch setOnTintColor:[UIColor redColor]];
+        
+        if ([indexPath row] == 0) {
+            cell.textLabel.text = @"GO?";
+        }
+        else {
+            cell.textLabel.text = @"ERROR!!";
+        }
+
+    [cell.contentView addSubview:onSwitch];
+    [onSwitch release];
+    }
 }
+
 if ([indexPath section] == 0) { // Latitude and Longitude
     switch ([indexPath row]) {
         case 0: 
@@ -116,13 +130,10 @@ if ([indexPath section] == 0) { // Latitude and Longitude
         case 2: 
             cell.textLabel.text = @"Altitude"; 
             break;
-        default: 
-            cell.textLabel.text = @"ERROR"; 
+        default:
+            cell.textLabel.text = @"ERROR";
             break;
     }
-}
-else { // Login button section
-    cell.textLabel.text = @"Log in";
 }
 return cell;    
 }
