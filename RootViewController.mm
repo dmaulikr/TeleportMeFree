@@ -36,7 +36,7 @@
 // number of row in the section, I assume there is only 1 row
 - (NSInteger)tableView:(UITableView *)theTableView numberOfRowsInSection:(NSInteger)section
 {
-    return 3;
+    return 4;
 }
 
 /* the cell will be returned to the tableView
@@ -67,30 +67,42 @@
             UITextField *playerTextField = [[UITextField alloc] initWithFrame:CGRectMake(110, 10, 185, 30)];
             playerTextField.adjustsFontSizeToFitWidth = YES;
             playerTextField.textColor = [UIColor blackColor];
-        if ([indexPath row] == 0) {
-            playerTextField.placeholder = @"Latitude";
-            playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
-            playerTextField.returnKeyType = UIReturnKeyNext;
-        }
-        else {
-            playerTextField.placeholder = @"Longitude";
-            playerTextField.keyboardType = UIKeyboardTypeDefault;
-            playerTextField.returnKeyType = UIReturnKeyDone;
-            playerTextField.secureTextEntry = YES;
-        }       
-        playerTextField.backgroundColor = [UIColor whiteColor];
-        playerTextField.autocorrectionType = UITextAutocorrectionTypeNo; // no auto correction support
-        playerTextField.autocapitalizationType = UITextAutocapitalizationTypeNone; // no auto capitalization support
-        playerTextField.textAlignment = UITextAlignmentLeft;
-        playerTextField.tag = 0;
-        //playerTextField.delegate = self;
+            switch ([indexPath row]) {
+                case 0:
+                    playerTextField.placeholder = @"Latitude";
+                    playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
+                    playerTextField.returnKeyType = UIReturnKeyNext;
+                    break;
+                case 1:
+                    playerTextField.placeHolder = @"Longitude";
+                    playerTextField.keyboardType = UIKeyboardTypeDefault;
+                    playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
+                    playerTextField.returnKeyType = UIReturnKeyNext;
+                    break;
+                case 2:
+                    playerTextField.placeHolder = @"Altitude";
+                    playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
+                    break;
+                default:
+                    playerTextField.placeHolder = @"ERROR";
+                    break;
 
-        playerTextField.clearButtonMode = UITextFieldViewModeNever; // no clear 'x' button to the right
-        [playerTextField setEnabled: YES];
 
-        [cell.contentView addSubview:playerTextField];
+            }
+            
+            playerTextField.backgroundColor = [UIColor whiteColor];
+            playerTextField.autocorrectionType = UITextAutocorrectionTypeNo; // no auto correction support
+            playerTextField.autocapitalizationType = UITextAutocapitalizationTypeNone; // no auto capitalization support
+            playerTextField.textAlignment = UITextAlignmentLeft;
+            playerTextField.tag = 0;
+            //playerTextField.delegate = self;
 
-        [playerTextField release];
+            playerTextField.clearButtonMode = UITextFieldViewModeNever; // no clear 'x' button to the right
+            [playerTextField setEnabled: YES];
+
+            [cell.contentView addSubview:playerTextField];
+
+            [playerTextField release];
     }
 }
 if ([indexPath section] == 0) { // Latitude and Longitude
