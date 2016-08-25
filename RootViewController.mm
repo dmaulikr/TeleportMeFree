@@ -108,7 +108,7 @@
         [onSwitch setOnTintColor:[UIColor redColor]];
         
         if ([indexPath row] == 0) {
-            cell.textLabel.text = @"GO?";
+            cell.textLabel.text = @"On/Off";
         }
         else {
             cell.textLabel.text = @"ERROR!!";
