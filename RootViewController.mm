@@ -54,20 +54,19 @@
 	    switch ([indexPath row]) {
 		case 0:
 		    playerTextField.placeholder = @"Latitude";
-		    playerTextField.keyboardType = UIKeyboardTypeDecimalPad;
+		    playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
 		    playerTextField.returnKeyType = UIReturnKeyNext;
             playerTextField.tag = LATITUDE;
 		    break;
 		case 1:
 		    playerTextField.placeholder = @"Longitude";
-		    playerTextField.keyboardType = UIKeyboardTypeDefault;
-		    playerTextField.keyboardType = UIKeyboardTypeDecimalPad;
+		    playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
 		    playerTextField.returnKeyType = UIReturnKeyNext;
             playerTextField.tag = LONGITUDE;
 		    break;
 		case 2:
 		    playerTextField.placeholder = @"Altitude";
-		    playerTextField.keyboardType = UIKeyboardTypeDecimalPad;
+		    playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
             playerTextField.tag = ALTITUDE;
 		    break;
 		case 3:
@@ -79,7 +78,6 @@
 	    playerTextField.autocorrectionType = UITextAutocorrectionTypeNo; // no auto correction support
 	    playerTextField.autocapitalizationType = UITextAutocapitalizationTypeNone; // no auto capitalization support
 	    playerTextField.textAlignment = UITextAlignmentLeft;
-	    playerTextField.tag = 0;
 	    //playerTextField.delegate = self;
 
 	    playerTextField.clearButtonMode = UITextFieldViewModeNever; // no clear 'x' button to the right
@@ -125,38 +123,50 @@ return cell;
 }
 
 - (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string {
-    NSString *expression = @"^([0-9]*)(\\.([0-9]+)?)?$";
-    NSString *newStr = textField.text;
-
-    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:expression options:NSRegularExpressionCaseInsensitive error:nil];
-    NSUInteger noOfMatches = [regex numberOfMatchesInString:newStr options:0 range:NSMakeRange(0,[newStr length])];
-
-    if (noOfMatches==0)
-    {
-        return NO;
-    }
-
-    NSUInteger newLength = [textField.text length] + [string length] - range.length;
+    
+    //Undo bug crash check
     if(range.length + range.location > textField.text.length)
     {
         return NO;
     }
-    if ([newStr containsString:@"."])
-    {
-        return newLength <= 6;
+
+    if (string.length > 15)
+        return NO;
+
+    NSString *checkString = [textField.text stringByReplacingCharactersInRange:range withString:string];
+
+    //empty field OK
+    if (!checkString.length)
+        return YES;
+
+    if ([checkString isEqualToString:@"-"])
+        return YES;
+
+    NSString *expression = nil;
+
+    switch (textField.tag) {
+        case LATITUDE:
+            expression = @"^(-)?([0-9]{1,2})([,\\.]([0-9]{1,8})?)?$";
+            break;
+        case LONGITUDE:
+            expression = @"^(-)?([0-9]{1,3})([,\\.]([0-9]{1,8})?)?$";
+            break;
+        case ALTITUDE:
+            expression = @"^(-)?([0-9]{1,5})([,\\.]([0-9]{1,8})?)?$";
+            break;
+        default:
+            NSLog(@"ERROR: Invalid textfield. Maybe no tag?");
+            return NO;
+            break;
     }
-    return newLength <= 3;
 
-    //  return YES;
-    //NSUInteger newLength = [textField.text length] + [string length] - range.length;
-    //if (newLength > 12)
-	//return NO;
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:expression options:NSRegularExpressionCaseInsensitive error:nil];
+    NSUInteger numberOfMatches = [regex numberOfMatchesInString:checkString options:0 range:NSMakeRange(0,[checkString length])];
 
-     //if more than one decimal
-     //     return NO;
+    if (numberOfMatches == 0)
+        return NO;
 
-
-     return YES;
+    return YES;
 }
 #pragma mark - UITableViewDelegate
 // when user tap the row, what action you want to perform
