@@ -124,12 +124,13 @@
 return cell;	
 }
 
-/*
+
 - (void)checkTextField:(id)sender {
-    UITextField *textField = (UITextField *)sender;
+    return;
+    /*UITextField *textField = (UITextField *)sender;
     if ([textField.text characterAtIndex:0] == '.')
-        textField.text = [@"0" stringByAppendingString: textField.text];
-}*/
+        textField.text = [@"0" stringByAppendingString: textField.text];*/
+}
 
 
 
@@ -183,13 +184,15 @@ return cell;
 - (void)textFieldDidEndEditing:(UITextField *)textField {
 
     NSString *checkString = textField.text;
-    NSString *zero = @"0";
+    
+    //NSString *zero = @"0";
 
     //fix checkString if needed
+    /*
     if ([checkString characterAtIndex:0] == '.') {
         checkString = [zero stringByAppendingString: checkString];
         NSLog(@"checkstring was changed and is now: %@", checkString);
-    }
+    }*/
 
     //check for a valid number
     NSString *expression = @"^(-)?([0-9]{1,5})([,\\.]([0-9]{1,8})?)?$";
