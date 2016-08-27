@@ -84,43 +84,54 @@
 	    [playerTextField setEnabled: YES];
 	    [cell.contentView addSubview:playerTextField];
 	    playerTextField.delegate = self;
+        [playerTextField addTarget:self action:@selector(checkTextField:) forControlEvents:UIControlEventEditingChanged];
 	    [playerTextField release];
     }
     
-    else { //Section for boolean inputs (UISwitches)
-	UISwitch *onSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(120, 10, 185, 30)];
-	[onSwitch setOnTintColor:[UIColor redColor]];
+        else { //Section for boolean inputs (UISwitches)
+	       UISwitch *onSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(120, 10, 185, 30)];
+	       [onSwitch setOnTintColor:[UIColor redColor]];
 	
-	if ([indexPath row] == 0) {
-	    cell.textLabel.text = @"Teleport!";
-	}
-	else {
-	    cell.textLabel.text = @"ERROR!!";
-	}
+	    if ([indexPath row] == 0) {
+	       cell.textLabel.text = @"Teleport!";
+	    }
+	    else {
+	       cell.textLabel.text = @"ERROR!!";
+	    }
 
-    [cell.contentView addSubview:onSwitch];
-    [onSwitch release];
+        [cell.contentView addSubview:onSwitch];
+        [onSwitch release];
+        }
     }
-}
 
-if ([indexPath section] == 0) { // Latitude and Longitude
-    switch ([indexPath row]) {
-	case 0: 
-	    cell.textLabel.text = @"Latitude"; 
-	    break;
-	case 1: 
-	    cell.textLabel.text = @"Longitude"; 
-	    break;
-	case 2: 
-	    cell.textLabel.text = @"Altitude"; 
-	    break;
-	default:
-	    cell.textLabel.text = @"ERROR";
-	    break;
+    if ([indexPath section] == 0) { // Latitude and Longitude
+        switch ([indexPath row]) {
+	    case 0: 
+	       cell.textLabel.text = @"Latitude"; 
+	       break;
+	    case 1: 
+	       cell.textLabel.text = @"Longitude"; 
+	       break;
+	   case 2: 
+	       cell.textLabel.text = @"Altitude"; 
+	       break;
+	   default:
+	       cell.textLabel.text = @"ERROR";
+	       break;
+        }
     }
-}
+
 return cell;	
 }
+
+/*
+- (void)checkTextField:(id)sender {
+    UITextField *textField = (UITextField *)sender;
+    if ([textField.text characterAtIndex:0] == '.')
+        textField.text = [@"0" stringByAppendingString: textField.text];
+}*/
+
+
 
 - (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string {
     
@@ -146,13 +157,13 @@ return cell;
 
     switch (textField.tag) {
         case LATITUDE:
-            expression = @"^(-)?([0-9]{1,2})([,\\.]([0-9]{1,8})?)?$";
+            expression = @"^(-)?([0-9]{1,2})?([,\\.]([0-9]{1,8})?)?$";
             break;
         case LONGITUDE:
-            expression = @"^(-)?([0-9]{1,3})([,\\.]([0-9]{1,8})?)?$";
+            expression = @"^(-)?([0-9]{1,3})?([,\\.]([0-9]{1,8})?)?$";
             break;
         case ALTITUDE:
-            expression = @"^(-)?([0-9]{1,5})([,\\.]([0-9]{1,8})?)?$";
+            expression = @"^(-)?([0-9]{1,5})?([,\\.]([0-9]{1,8})?)?$";
             break;
         default:
             NSLog(@"ERROR: Invalid textfield. Maybe no tag?");
@@ -171,6 +182,15 @@ return cell;
 
 - (void)textFieldDidEndEditing:(UITextField *)textField {
 
+    NSString *checkString = textField.text;
+    NSString *zero = @"0";
+
+    //fix checkString if needed
+    if ([checkString characterAtIndex:0] == '.') {
+        checkString = [zero stringByAppendingString: checkString];
+        NSLog(@"checkstring was changed and is now: %@", checkString);
+    }
+
     //check for a valid number
     NSString *expression = @"^(-)?([0-9]{1,5})([,\\.]([0-9]{1,8})?)?$";
     NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:expression options:NSRegularExpressionCaseInsensitive error:nil];
@@ -182,7 +202,7 @@ return cell;
     }
 
     //otherwise we have a number
-    double checkValue = [textField.text doubleValue];
+    double checkValue = [checkString doubleValue];
 
     switch (textField.tag) {
         case LATITUDE:
@@ -218,6 +238,7 @@ return cell;
     //  transportSwitchEnabled = YES;
     //transportSwitchEnabled = NO;
 }
+
 
 #pragma mark - UITableViewDelegate
 // when user tap the row, what action you want to perform
