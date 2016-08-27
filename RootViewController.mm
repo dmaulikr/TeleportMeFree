@@ -1,6 +1,11 @@
 #import "RootViewController.h"
 
 @implementation RootViewController
+
+    @synthesize validLatitude;
+    @synthesize validLongitude;
+    @synthesize transportReady;
+
 - (void)loadView {
 	self.view = [[[UIView alloc] initWithFrame:[[UIScreen mainScreen] applicationFrame]] autorelease];
 	self.view.backgroundColor = [UIColor whiteColor];
@@ -21,6 +26,10 @@
 
     // add to canvas
     [self.view addSubview:tableView];
+
+    validLatitude = NO;
+    validLongitude = NO;
+    transportReady = NO;
 }
 
 #pragma mark - UITableViewDataSource
@@ -32,7 +41,7 @@
 - (NSInteger)tableView:(UITableView *)theTableView numberOfRowsInSection:(NSInteger)section
 {
     if (section == 0)
-	return 3;
+	   return 3;
     else return 1;
 }
 
@@ -78,7 +87,6 @@
 	    playerTextField.autocorrectionType = UITextAutocorrectionTypeNo; // no auto correction support
 	    playerTextField.autocapitalizationType = UITextAutocapitalizationTypeNone; // no auto capitalization support
 	    playerTextField.textAlignment = UITextAlignmentLeft;
-	    //playerTextField.delegate = self;
 
 	    playerTextField.clearButtonMode = UITextFieldViewModeNever; // no clear 'x' button to the right
 	    [playerTextField setEnabled: YES];
@@ -89,8 +97,9 @@
     }
     
         else { //Section for boolean inputs (UISwitches)
-	       UISwitch *onSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(120, 10, 185, 30)];
+	       onSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(120, 10, 185, 30)];
 	       [onSwitch setOnTintColor:[UIColor redColor]];
+           onSwitch.enabled = NO;
 	
 	    if ([indexPath row] == 0) {
 	       cell.textLabel.text = @"Teleport!";
@@ -120,15 +129,17 @@
 	       break;
         }
     }
-
+[cell setSelectionStyle:UITableViewCellSelectionStyleNone];
 return cell;	
 }
 
 
 - (void)checkTextField:(id)sender {
     
+
     UITextField *textField = (UITextField *)sender;
     NSString *checkString = textField.text;
+    transportReady = onSwitch.enabled = NO;
     
     //check for a valid number
     NSString *expression = @"^(-)?([0-9]{1,5})?([,\\.]([0-9]{1,8})?)?$";
@@ -143,48 +154,42 @@ return cell;
     NSString *fixedCheck = [checkString stringByReplacingOccurrencesOfString:@"," withString:@"."];
     double checkValue = [fixedCheck doubleValue];
 
+    //default to error state
     textField.rightViewMode = UITextFieldViewModeAlways;
     UIImageView* imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 12, 32, 32)];
     imageView.image = [UIImage imageNamed:@"error.png"];
     imageView.contentMode = UIViewContentModeScaleAspectFit;
     textField.rightView = imageView;
 
-
     switch (textField.tag) {
         case LATITUDE:
             if ( checkValue < -90 || checkValue > 90 ) { 
-            //latitudeValid = NO;
-            return;
-            }
-            //latitudeValid = YES;
-            break;
-        case LONGITUDE:
-            if ( checkValue < -180 || checkValue > 180) {
-                //longitudeValid = NO; 
+                validLatitude = NO;
                 return;
             }
-            //longitudeValid = YES;
+            validLatitude = YES;
             break;
-        case ALTITUDE:
-            if ( checkValue < -800 || checkValue > 6000) {
-                NSLog(@"WARNING: Strange altitudes detected. Travel safely.");
 
-                //warn user that they're being dumb, but don't prevent val
+        case LONGITUDE:
+            if ( checkValue < -180 || checkValue > 180) {
+                validLongitude = NO;
+                return;
             }
-            //altitudeSafe = YES;
+            validLongitude = YES;
             break;
         default:
             NSLog(@"ERROR: untagged text field was edited.");
             break;   
     }
 
+    //clear error image if we made it out alive
     textField.rightViewMode = UITextFieldViewModeNever;
     textField.rightView = nil;
 
-    NSLog(@"Coordinate was valid! Number was: %.9g", checkValue);
-    //if (latitudeValid && longitudeValid)
-    //  transportSwitchEnabled = YES;
-    //transportSwitchEnabled = NO;
+    if (validLatitude && validLongitude)
+        transportReady = onSwitch.enabled = YES;
+
+    transportReady = NO;
 }
 
 
