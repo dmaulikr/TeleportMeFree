@@ -1,10 +1,16 @@
 #import "RootViewController.h"
+#import "Teleporter.h"
 
 @implementation RootViewController
 
     @synthesize validLatitude;
     @synthesize validLongitude;
+    @synthesize validAltitude;
     @synthesize transportReady;
+
+    @synthesize latitude;
+    @synthesize longitude;
+    @synthesize altitude;
 
 - (void)loadView {
 	self.view = [[[UIView alloc] initWithFrame:[[UIScreen mainScreen] applicationFrame]] autorelease];
@@ -15,7 +21,7 @@
 	helloLabel.textAlignment = UITextAlignmentLeft;
 	[self.view addSubview:helloLabel];
 
-// init table view
+    // init table view
     tableView = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStylePlain];
 
     // must set delegate & dataSource, otherwise the the table will be empty and not responsive
@@ -27,9 +33,12 @@
     // add to canvas
     [self.view addSubview:tableView];
 
-    validLatitude = NO;
-    validLongitude = NO;
-    transportReady = NO;
+    validLatitude = validLongitude = validAltitude =  transportReady = NO;
+    latitude = longitude = altitude = 0;
+
+    //Make tweak
+    Teleporter *toyota = [[Teleporter alloc] initWithLatitude:3 Longitude:4 Altitude:5];
+    [toyota drive];
 }
 
 #pragma mark - UITableViewDataSource
@@ -52,9 +61,10 @@
     UITableViewCell *cell = (UITableViewCell*) [theTableView dequeueReusableCellWithIdentifier:kCellIdentifier];
     
     if (cell == nil) {
-	cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault 
+	cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault
 				   reuseIdentifier:kCellIdentifier] autorelease];
 	cell.accessoryType = UITableViewCellAccessoryNone;
+    cell.selectionStyle = UITableViewCellSelectionStyleNone;
 
 	if ([indexPath section] == 0) { //Section for number inputs
 	    UITextField *playerTextField = [[UITextField alloc] initWithFrame:CGRectMake(110, 10, 185, 30)];
@@ -99,7 +109,9 @@
         else { //Section for boolean inputs (UISwitches)
 	       onSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(120, 10, 185, 30)];
 	       [onSwitch setOnTintColor:[UIColor redColor]];
+           [onSwitch addTarget:self action:@selector(setState:) forControlEvents:UIControlEventValueChanged];
            onSwitch.enabled = NO;
+           [onSwitch setOn:NO];
 	
 	    if ([indexPath row] == 0) {
 	       cell.textLabel.text = @"Teleport!";
@@ -129,18 +141,24 @@
 	       break;
         }
     }
-[cell setSelectionStyle:UITableViewCellSelectionStyleNone];
+
 return cell;	
 }
 
 
-- (void)checkTextField:(id)sender {
-    
+//------Text Validation Functions-------------------
 
+// checkTextField gets the final input value of a text field and makes sure that it's 
+// correct. If it's not valid for our purposes, an error icon is displayed to the user.
+// Otherwise, the we update the View Controller's Latitude, Longitude, and/or Altitude
+// properties.
+- (void)checkTextField:(id)sender {
     UITextField *textField = (UITextField *)sender;
     NSString *checkString = textField.text;
-    transportReady = onSwitch.enabled = NO;
-    
+    transportReady = NO;
+    if (!onSwitch.isOn)
+        onSwitch.enabled = NO;
+
     //check for a valid number
     NSString *expression = @"^(-)?([0-9]{1,5})?([,\\.]([0-9]{1,8})?)?$";
     NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:expression options:NSRegularExpressionCaseInsensitive error:nil];
@@ -161,6 +179,7 @@ return cell;
     imageView.contentMode = UIViewContentModeScaleAspectFit;
     textField.rightView = imageView;
 
+    NSLog(@"Editing textField with tag: %d", textField.tag);
     switch (textField.tag) {
         case LATITUDE:
             if ( checkValue < -90 || checkValue > 90 ) { 
@@ -168,6 +187,7 @@ return cell;
                 return;
             }
             validLatitude = YES;
+            latitude = checkValue;
             break;
 
         case LONGITUDE:
@@ -176,7 +196,14 @@ return cell;
                 return;
             }
             validLongitude = YES;
+            longitude = checkValue;
             break;
+
+        case ALTITUDE:
+            validAltitude = YES;
+            altitude = checkValue;
+            break;
+            
         default:
             NSLog(@"ERROR: untagged text field was edited.");
             break;   
@@ -186,14 +213,17 @@ return cell;
     textField.rightViewMode = UITextFieldViewModeNever;
     textField.rightView = nil;
 
-    if (validLatitude && validLongitude)
+    if (validLatitude && validLongitude && validAltitude) {
         transportReady = onSwitch.enabled = YES;
+        return;
+    }
 
     transportReady = NO;
 }
 
 
-
+// Makes sure that all inputted values in the text fields conform to what we expect them to be,
+// i.e. decimal numbers with magnitudes of hundreds or thousands.
 - (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string {
     
     //Undo bug crash check
@@ -240,6 +270,27 @@ return cell;
 
     return YES;
 }
+
+- (void)textFieldDidEndEditing:(UITextField *)textField {
+
+}
+
+//------End text validation------
+
+- (void)setState:(id)sender 
+{
+    BOOL state = [sender isOn];
+    NSLog(state ? @"Button ON" : @"Button OFF");
+    if (!transportReady && !state)
+        onSwitch.enabled = NO;
+
+    /*
+    if (validLatitude){NSLog(@"Latitude Valid");}
+    if (validLongitude){NSLog(@"Longitude Valid");}
+    if (validAltitude){NSLog(@"Altitude valid");}
+    if (transportReady){NSLog(@"Transport ready");}*/
+}
+
 
 #pragma mark - UITableViewDelegate
 // when user tap the row, what action you want to perform

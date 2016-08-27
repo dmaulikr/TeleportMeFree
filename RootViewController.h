@@ -1,6 +1,6 @@
 typedef enum {
-    LONGITUDE,
     LATITUDE,
+    LONGITUDE,
     ALTITUDE
 } COORDINATE_TYPE;
 
@@ -8,11 +8,16 @@ typedef enum {
     UILabel*helloLabel;
     UITableView*tableView;
     UISwitch*onSwitch;
-
 }
 
 @property (readonly, nonatomic) BOOL validLatitude;
 @property (readonly, nonatomic) BOOL validLongitude;
+@property (readonly, nonatomic) BOOL validAltitude;
 @property (readonly, nonatomic) BOOL transportReady;
+
+@property (readonly, nonatomic) double latitude;
+@property (readonly, nonatomic) double longitude;
+@property (readonly, nonatomic) double altitude;
+
 
 @end
