@@ -53,19 +53,19 @@
 	    playerTextField.textColor = [UIColor blackColor];
 	    switch ([indexPath row]) {
 		case 0:
-		    playerTextField.placeholder = @"Latitude";
+		    playerTextField.placeholder = @"±90";
 		    playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
 		    playerTextField.returnKeyType = UIReturnKeyNext;
             playerTextField.tag = LATITUDE;
 		    break;
 		case 1:
-		    playerTextField.placeholder = @"Longitude";
+		    playerTextField.placeholder = @"±180";
 		    playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
 		    playerTextField.returnKeyType = UIReturnKeyNext;
             playerTextField.tag = LONGITUDE;
 		    break;
 		case 2:
-		    playerTextField.placeholder = @"Altitude";
+		    playerTextField.placeholder = @"To the moon";
 		    playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
             playerTextField.tag = ALTITUDE;
 		    break;
@@ -126,10 +126,65 @@ return cell;
 
 
 - (void)checkTextField:(id)sender {
-    return;
-    /*UITextField *textField = (UITextField *)sender;
-    if ([textField.text characterAtIndex:0] == '.')
-        textField.text = [@"0" stringByAppendingString: textField.text];*/
+    
+    UITextField *textField = (UITextField *)sender;
+    NSString *checkString = textField.text;
+    
+    //check for a valid number
+    NSString *expression = @"^(-)?([0-9]{1,5})?([,\\.]([0-9]{1,8})?)?$";
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:expression options:NSRegularExpressionCaseInsensitive error:nil];
+    NSUInteger numberOfMatches = [regex numberOfMatchesInString:checkString options:0 range:NSMakeRange(0,[checkString length])];
+    if ( numberOfMatches == 0 || !checkString.length) {
+        NSLog(@"BAD NUMBER DETECTED!");
+        return;
+    }
+
+    //otherwise we have a number
+    NSString *fixedCheck = [checkString stringByReplacingOccurrencesOfString:@"," withString:@"."];
+    double checkValue = [fixedCheck doubleValue];
+
+    textField.rightViewMode = UITextFieldViewModeAlways;
+    UIImageView* imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 12, 32, 32)];
+    imageView.image = [UIImage imageNamed:@"error.png"];
+    imageView.contentMode = UIViewContentModeScaleAspectFit;
+    textField.rightView = imageView;
+
+
+    switch (textField.tag) {
+        case LATITUDE:
+            if ( checkValue < -90 || checkValue > 90 ) { 
+            //latitudeValid = NO;
+            return;
+            }
+            //latitudeValid = YES;
+            break;
+        case LONGITUDE:
+            if ( checkValue < -180 || checkValue > 180) {
+                //longitudeValid = NO; 
+                return;
+            }
+            //longitudeValid = YES;
+            break;
+        case ALTITUDE:
+            if ( checkValue < -800 || checkValue > 6000) {
+                NSLog(@"WARNING: Strange altitudes detected. Travel safely.");
+
+                //warn user that they're being dumb, but don't prevent val
+            }
+            //altitudeSafe = YES;
+            break;
+        default:
+            NSLog(@"ERROR: untagged text field was edited.");
+            break;   
+    }
+
+    textField.rightViewMode = UITextFieldViewModeNever;
+    textField.rightView = nil;
+
+    NSLog(@"Coordinate was valid! Number was: %.9g", checkValue);
+    //if (latitudeValid && longitudeValid)
+    //  transportSwitchEnabled = YES;
+    //transportSwitchEnabled = NO;
 }
 
 
@@ -180,68 +235,6 @@ return cell;
 
     return YES;
 }
-
-- (void)textFieldDidEndEditing:(UITextField *)textField {
-
-    NSString *checkString = textField.text;
-    
-    //NSString *zero = @"0";
-
-    //fix checkString if needed
-    /*
-    if ([checkString characterAtIndex:0] == '.') {
-        checkString = [zero stringByAppendingString: checkString];
-        NSLog(@"checkstring was changed and is now: %@", checkString);
-    }*/
-
-    //check for a valid number
-    NSString *expression = @"^(-)?([0-9]{1,5})([,\\.]([0-9]{1,8})?)?$";
-    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:expression options:NSRegularExpressionCaseInsensitive error:nil];
-    NSUInteger numberOfMatches = [regex numberOfMatchesInString:checkString options:0 range:NSMakeRange(0,[checkString length])];
-    if ( numberOfMatches == 0) {
-        NSLog(@"BAD NUMBER DETECTED!");
-        //display an error message to the user. need valid number.
-        return;
-    }
-
-    //otherwise we have a number
-    double checkValue = [checkString doubleValue];
-
-    switch (textField.tag) {
-        case LATITUDE:
-            if ( checkValue < -90 || checkValue > 90 ) {
-                NSLog(@"Invalid LATITUDE detected. Need value from -90 to 90 only.");
-                //display invalid latitude to user
-                return;
-            }
-            //latitudeValid = YES;
-            break;
-        case LONGITUDE:
-            if ( checkValue < -180 || checkValue > 180) {
-                NSLog(@"Invalid LONGITUDE detected. Values range from -180 to 180.");
-                //display invalid longitude msg to user
-                return;
-            }
-            //longitudeValid = YES;
-            break;
-        case ALTITUDE:
-            if ( checkValue < -800 || checkValue > 6000) {
-                NSLog(@"WARNING: Strange altitudes detected. Travel safely.");
-                //warn user that they're being dumb, but don't prevent val
-            }
-            //altitudeSafe = YES;
-            break;
-        default:
-            NSLog(@"ERROR: untagged text field was edited.");
-            break;   
-    }
-
-    NSLog(@"Coordinate was valid!");
-    //if (latitudeValid && longitudeValid)
-    //  transportSwitchEnabled = YES;
-    //transportSwitchEnabled = NO;
-}
-
 
 #pragma mark - UITableViewDelegate
 // when user tap the row, what action you want to perform
