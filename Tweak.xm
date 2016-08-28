@@ -19,15 +19,8 @@
 //TweakController *controller = nil;
 NSDictionary* prefs = nil;
 
-double deltaX = 0;
-double deltaY = 0;
-double deltaZ = 0;
-
-double targetZ = 0;
-double targetX = 0;
-double targetY = 0;
-
-
+double deltaX, deltaY, deltaZ;
+double targetX, targetY, targetZ;
 
 BOOL startedOnce = false;
 BOOL activated = false;
@@ -39,6 +32,8 @@ static void reloadPrefs();
     //controller = [[TweakController alloc] init];
     //reloadPrefs_iOS8();
     reloadPrefs();
+    deltaX = deltaY = deltaZ = targetX = targetY = targetZ = 0;
+    NSLog(@"Constructor call. Vals for deltas and targets: %f, %f, %f, %f, %f, %f", deltaX, deltaY, deltaZ, targetX, targetY, targetZ);
 }
 
 
@@ -78,26 +73,25 @@ static void reloadPrefs();
 
 %hook CLLocation
      %new 
-       - (NSInteger)currentSecond {
-    NSDate *today = [NSDate date];
-    NSCalendar *gregorian = [[[NSCalendar alloc]
+    - (NSInteger)currentSecond {
+        NSDate *today = [NSDate date];
+        NSCalendar *gregorian = [[[NSCalendar alloc]
              initWithCalendarIdentifier:NSGregorianCalendar] autorelease];
-    NSDateComponents *components =
+        NSDateComponents *components =
             [gregorian components:(NSHourCalendarUnit | NSMinuteCalendarUnit | NSSecondCalendarUnit) fromDate:today];
 
-    return [components second];
+        return [components second];
     }
 
     %new
-       - (double)fuzzy {
-         double max = 0.7;
-         double min = -0.7;
-         double range = max - min;
+    - (double)fuzzy {
+        double max = 0.7;
+        double min = -0.7;
+        double range = max - min;
 
-         double ret = ((double) arc4random()/ARC4RANDOM_MAX) * range + min;
-       
-         NSLog(@"ret was %f", ret);
-         return ret;
+        double ret = ((double) arc4random()/ARC4RANDOM_MAX) * range + min;
+
+        return ret;
       }
 
     - (CLLocationCoordinate2D)coordinate {
@@ -143,33 +137,6 @@ static void reloadPrefs();
     
 %end
 
-//Here, using Logos's 'hook' construct to access the SpringBoard class. 'Hooking' basically means we want to access this class and modify the methods inside it.
-%hook SpringBoard
-
-//Now that logos knows we want to hook the header SpringBoard, we can directly 'hijack' SpringBoard's methods and modify them to run out own code instead of their original code.
-
-//In this example, we are hijacking the method - (void)applicationDidFinishLaunching and making it run our own code. This method takes an argument, (id)application, however, you can rename the argument anything you'd like, such as (id)testName.
--(void)applicationDidFinishLaunching:(id)application {
-
-    //Before we do anything, let's call the original method so SpringBoard knows what to do when it finishes launching. '%orig' basically means 'do whatever you were going to do before I got here'.
-    %orig;
-    
-    
-    //Now that SpringBoard has finished launching and everything turned out okay, let's make a UIAlertView to tell us that it finished respringing.
-    UIAlertView *alert1 = [[UIAlertView alloc] initWithTitle:@"Welcome"
-    message:@"This is a test."
-    delegate:self
-    cancelButtonTitle:@"Testing"
-    otherButtonTitles:nil];
-    //Now show that alert
-    [alert1 show];
-    //And release it. We don't want any memory leaks ;)
-    [alert1 release];
-
-}
-//This lets logos know we're done hooking this header.
-%end
-
 //---Functions-----
 /*
 static void reloadPrefs_iOS8() {
@@ -208,4 +175,15 @@ static void reloadPrefs() {
         NSLog(@" Tweak.xm failed to set prefs.");
     else
         NSLog(@" Prefs was updated. Dictionary is as follows: %@", [prefs description]);
+
+    if (prefs[@"isReady"]) {
+        NSLog(@"dictionary has isready!");
+        targetX = [[prefs objectForKey:@"Latitude"] doubleValue];
+        targetY = [[prefs objectForKey:@"Longitude"] doubleValue];
+        targetZ = [[prefs objectForKey:@"Altitude"] doubleValue];
+
+        NSLog(@"TargetX,Y,Z: %f, %f, %f", targetX, targetY, targetZ);
+    }
+    else
+        NSLog(@"failed to find isready.Exiting.");
 }
