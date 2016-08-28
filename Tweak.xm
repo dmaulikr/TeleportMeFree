@@ -15,36 +15,31 @@
 #import <CoreLocation/CLHeading.h>
 #include <stdlib.h>
 
-NSDictionary *prefs = nil;
-
-static void reloadPrefs() {
-    // Check if system app (all system apps have this as their home directory). This path may change but it's unlikely.
-    BOOL isSystem = [NSHomeDirectory() isEqualToString:@"/var/mobile"];
-    // Retrieve preferences
-    if(isSystem) {
-        CFArrayRef keyList = CFPreferencesCopyKeyList(CFSTR("co.jably.iteleport"), kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-        if(keyList) {
-            prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, CFSTR("co.jalby.iteleport"), kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-            if(!prefs) prefs = [NSDictionary new];
-            CFRelease(keyList);
-        }
-    }else {
-        prefs = [NSDictionary dictionaryWithContentsOfFile:@"/User/Library/Preferences/co.jalby.iteleport.plist"];
-    }
-}
-
 #define ARC4RANDOM_MAX    0x100000000
+//TweakController *controller = nil;
+NSDictionary* prefs = nil;
 
 double deltaX = 0;
 double deltaY = 0;
 double deltaZ = 0;
 
-double targetZ = 2.012;
-double targetX = 37.808472;
-double targetY = -122.410119;
+double targetZ = 0;
+double targetX = 0;
+double targetY = 0;
+
+
 
 BOOL startedOnce = false;
 BOOL activated = false;
+
+//static void reloadPrefs_iOS8();
+static void reloadPrefs();
+
+%ctor {
+    //controller = [[TweakController alloc] init];
+    //reloadPrefs_iOS8();
+    reloadPrefs();
+}
 
 
 %hook CLHeading
@@ -105,44 +100,25 @@ BOOL activated = false;
          return ret;
       }
 
-      - (CLLocationCoordinate2D)coordinate {
+    - (CLLocationCoordinate2D)coordinate {
         reloadPrefs();
-NSObject * object = [prefs objectForKey:@"success"];
-NSLog(@"Home directory: %@", NSHomeDirectory());
-NSLog (@"%@/Library/Preferences/%@", NSHomeDirectory(), @"co.jalby.iteleport.plist");
-        if (prefs != nil) {
-    NSLog(@"Prefs successfully loaded on tweak! Here is the dictionary:");
-    NSLog(@"Dictionary: %@", [prefs description]);
-}
-else {
-    NSLog(@"Prefs failed to load on tweak!");
-}
-if (object != nil) { 
-            NSLog(@"Tweak found key!");
+        NSLog(@"Getting 2d coordinates. Dictionary: %@", [prefs description]);
+
+        return %orig;
+
+         CLLocationCoordinate2D newCoords = %orig;
+
+         if (!startedOnce) {
+            deltaX = targetX - newCoords.latitude;
+            deltaY = targetY - newCoords.longitude;
+            startedOnce = YES;
         }
-        
-        if (object != nil) { 
-            NSLog(@"found key!");
-            return %orig;
-        }
-        else {
-            NSLog(@"didn't find key!");
-            return %orig;
-        }
-        
-    return %orig;
-    CLLocationCoordinate2D newCoords = %orig;
-    if (!startedOnce) {
-        deltaX = targetX - newCoords.latitude;
-        deltaY = targetY - newCoords.longitude;
-        startedOnce = YES;
-    }
-    
-    newCoords.latitude += deltaX;
-    newCoords.longitude += deltaY;
-    NSLog(@"here are current coordinates:%f and %f", newCoords.latitude, newCoords.longitude);
-    //return [self CLLocationCoordinate2DMake: targetX: targetY];
-    return newCoords;
+
+        newCoords.latitude += deltaX;
+        newCoords.longitude += deltaY;
+        NSLog(@"here are current coordinates:%f and %f", newCoords.latitude, newCoords.longitude);
+        //return [self CLLocationCoordinate2DMake: targetX: targetY];
+        return newCoords;
     }
 
     -(void)setAltitude:(CLLocationDistance)altitude {
@@ -151,15 +127,7 @@ if (object != nil) {
     }
     
     - (CLLocationDistance)altitude {
-    NSObject * object = [prefs objectForKey:@"success"];
-        if (object != nil) { 
-            NSLog(@"found key!");
-            return %orig;
-        }
-        else {
-            NSLog(@"didn't find key!");
-            return %orig;
-        }
+        return %orig;
     NSInteger current = [self currentSecond];
     if (current  % 12 == 0) {
        deltaZ = targetZ - %orig;
@@ -201,3 +169,43 @@ if (object != nil) {
 }
 //This lets logos know we're done hooking this header.
 %end
+
+//---Functions-----
+/*
+static void reloadPrefs_iOS8() {
+    // Check if system app (all system apps have this as their home directory). This path may change but it's unlikely.
+    BOOL isSystem = [NSHomeDirectory() isEqualToString:@"/var/mobile"];
+    // Retrieve preferences
+    if(isSystem) {
+        CFArrayRef keyList = CFPreferencesCopyKeyList(CFSTR("co.jably.iteleport"), kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+        if(keyList) {
+            controller.prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, CFSTR("co.jalby.iteleport"), kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+            if(!controller.prefs) controller.prefs = [NSDictionary new];
+            CFRelease(keyList);
+        }
+    }else {
+        controller.prefs = [NSDictionary dictionaryWithContentsOfFile:@"/User/Library/Preferences/co.jalby.iteleport.plist"];
+    }
+}
+*/
+static void reloadPrefs() {
+    // Check if system app (all system apps have this as their home directory). This path may change but it's unlikely.
+    BOOL isSystem = [NSHomeDirectory() isEqualToString:@"/var/mobile"];
+    // Retrieve preferences
+    prefs = nil;
+    if(isSystem) {
+        CFArrayRef keyList = CFPreferencesCopyKeyList(CFSTR("co.jalby.iteleport"), kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+        if(keyList) {
+            prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, CFSTR("co.jalby.iteleport"), kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
+            if(!prefs) prefs = [NSDictionary new];
+            CFRelease(keyList);
+        }
+    }else {
+        prefs = [NSDictionary dictionaryWithContentsOfFile:@"/User/Library/Preferences/co.jalby.iteleport.plist"];
+    }
+    NSLog(@" Tweak.xm received call to reloadPrefs.");
+    if (prefs == nil)
+        NSLog(@" Tweak.xm failed to set prefs.");
+    else
+        NSLog(@" Prefs was updated. Dictionary is as follows: %@", [prefs description]);
+}
