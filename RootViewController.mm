@@ -1,8 +1,7 @@
 #import "RootViewController.h"
-#import "Teleporter.h"
-
 @implementation RootViewController {
-    Teleporter *teleporter;
+     NSUserDefaults *defaults;
+    
 }
 
     @synthesize validLatitude;
@@ -14,7 +13,10 @@
     @synthesize longitude;
     @synthesize altitude;
 
-- (void)resetDefaults {
+    NSUserDefaults *defaults;
+
+- (void)resetDefaults
+ {
     NSUserDefaults * defs = [NSUserDefaults standardUserDefaults];
     NSDictionary * dict = [defs dictionaryRepresentation];
     for (id key in dict) {
@@ -22,6 +24,7 @@
     }
     [defs synchronize];
 }
+
 
 - (void)loadView {
 	self.view = [[[UIView alloc] initWithFrame:[[UIScreen mainScreen] applicationFrame]] autorelease];
@@ -47,12 +50,9 @@
     validLatitude = validLongitude = validAltitude =  teleportReady = NO;
     latitude = longitude = altitude = 0;
 
-    //Make tweak
-    teleporter = [[Teleporter alloc] init];
-    [teleporter logCoordinates];
-
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-    [defaults setBool:YES forKey:@"success"];
+    defaults = [NSUserDefaults standardUserDefaults];
+    if (defaults == nil)
+        NSLog(@"WARNING: NSDefaults incorrectly set.");
 }
 
 #pragma mark - UITableViewDataSource
@@ -170,6 +170,8 @@ return cell;
     UITextField *textField = (UITextField *)sender;
     NSString *checkString = textField.text;
     teleportReady = NO;
+    [defaults setBool:NO forKey:@"isReady"];
+    [defaults synchronize];
     if (!onSwitch.isOn)
         onSwitch.enabled = NO;
 
@@ -181,8 +183,6 @@ return cell;
         NSLog(@"BAD NUMBER DETECTED!");
         return;
     }
-    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
-NSObject * object = [defaults objectForKey:@"success"];
     //otherwise we have a number
     NSString *fixedCheck = [checkString stringByReplacingOccurrencesOfString:@"," withString:@"."];
     double checkValue = [fixedCheck doubleValue];
@@ -203,12 +203,9 @@ NSObject * object = [defaults objectForKey:@"success"];
             }
             validLatitude = YES;
             latitude = checkValue;
-            teleporter.targetX = latitude;
-            [teleporter logCoordinates];
-            
-        if (object != nil) { 
-            NSLog(@"found key!");
-        }
+            [defaults setDouble:latitude forKey:@"Latitude"];
+            [defaults synchronize];
+            NSLog(@"Stored %f in dictionary for LATITUDE. Dictionary is: %@",latitude, [[NSUserDefaults standardUserDefaults] dictionaryRepresentation]);
             break;
 
         case LONGITUDE:
@@ -218,13 +215,17 @@ NSObject * object = [defaults objectForKey:@"success"];
             }
             validLongitude = YES;
             longitude = checkValue;
-            teleporter.targetY = longitude;
-            [teleporter logCoordinates];
+            [defaults setDouble:longitude forKey:@"Longitude"];
+            [defaults synchronize];
+            NSLog(@"Stored %f in dictionary for LONGITUDE. Dictionary is: %@",latitude, [defaults dictionaryRepresentation]);
             break;
 
         case ALTITUDE:
             validAltitude = YES;
             altitude = checkValue;
+            [defaults setDouble:altitude forKey:@"Altitude"];
+            [defaults synchronize];
+            NSLog(@"Stored %f in dictionary for ALTITUDE. Dictionary is: %@",latitude, [defaults dictionaryRepresentation]);
             break;
             
         default:
@@ -238,6 +239,8 @@ NSObject * object = [defaults objectForKey:@"success"];
 
     if (validLatitude && validLongitude && validAltitude) {
         teleportReady = onSwitch.enabled = YES;
+        [defaults setBool:YES forKey:@"isReady"];
+        [defaults synchronize];
         return;
     }
 
