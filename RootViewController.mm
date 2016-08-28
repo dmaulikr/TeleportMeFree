@@ -1,16 +1,27 @@
 #import "RootViewController.h"
 #import "Teleporter.h"
 
-@implementation RootViewController
+@implementation RootViewController {
+    Teleporter *teleporter;
+}
 
     @synthesize validLatitude;
     @synthesize validLongitude;
     @synthesize validAltitude;
-    @synthesize transportReady;
+    @synthesize teleportReady;
 
     @synthesize latitude;
     @synthesize longitude;
     @synthesize altitude;
+
+- (void)resetDefaults {
+    NSUserDefaults * defs = [NSUserDefaults standardUserDefaults];
+    NSDictionary * dict = [defs dictionaryRepresentation];
+    for (id key in dict) {
+        [defs removeObjectForKey:key];
+    }
+    [defs synchronize];
+}
 
 - (void)loadView {
 	self.view = [[[UIView alloc] initWithFrame:[[UIScreen mainScreen] applicationFrame]] autorelease];
@@ -33,12 +44,15 @@
     // add to canvas
     [self.view addSubview:tableView];
 
-    validLatitude = validLongitude = validAltitude =  transportReady = NO;
+    validLatitude = validLongitude = validAltitude =  teleportReady = NO;
     latitude = longitude = altitude = 0;
 
     //Make tweak
-    Teleporter *toyota = [[Teleporter alloc] initWithLatitude:3 Longitude:4 Altitude:5];
-    [toyota drive];
+    teleporter = [[Teleporter alloc] init];
+    [teleporter logCoordinates];
+
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    [defaults setBool:YES forKey:@"success"];
 }
 
 #pragma mark - UITableViewDataSource
@@ -155,7 +169,7 @@ return cell;
 - (void)checkTextField:(id)sender {
     UITextField *textField = (UITextField *)sender;
     NSString *checkString = textField.text;
-    transportReady = NO;
+    teleportReady = NO;
     if (!onSwitch.isOn)
         onSwitch.enabled = NO;
 
@@ -167,7 +181,8 @@ return cell;
         NSLog(@"BAD NUMBER DETECTED!");
         return;
     }
-
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+NSObject * object = [defaults objectForKey:@"success"];
     //otherwise we have a number
     NSString *fixedCheck = [checkString stringByReplacingOccurrencesOfString:@"," withString:@"."];
     double checkValue = [fixedCheck doubleValue];
@@ -179,7 +194,7 @@ return cell;
     imageView.contentMode = UIViewContentModeScaleAspectFit;
     textField.rightView = imageView;
 
-    NSLog(@"Editing textField with tag: %d", textField.tag);
+    NSLog(@"Editing textField with tag: %ld", (long)textField.tag);
     switch (textField.tag) {
         case LATITUDE:
             if ( checkValue < -90 || checkValue > 90 ) { 
@@ -188,6 +203,12 @@ return cell;
             }
             validLatitude = YES;
             latitude = checkValue;
+            teleporter.targetX = latitude;
+            [teleporter logCoordinates];
+            
+        if (object != nil) { 
+            NSLog(@"found key!");
+        }
             break;
 
         case LONGITUDE:
@@ -197,6 +218,8 @@ return cell;
             }
             validLongitude = YES;
             longitude = checkValue;
+            teleporter.targetY = longitude;
+            [teleporter logCoordinates];
             break;
 
         case ALTITUDE:
@@ -214,11 +237,11 @@ return cell;
     textField.rightView = nil;
 
     if (validLatitude && validLongitude && validAltitude) {
-        transportReady = onSwitch.enabled = YES;
+        teleportReady = onSwitch.enabled = YES;
         return;
     }
 
-    transportReady = NO;
+    teleportReady = NO;
 }
 
 
@@ -281,7 +304,7 @@ return cell;
 {
     BOOL state = [sender isOn];
     NSLog(state ? @"Button ON" : @"Button OFF");
-    if (!transportReady && !state)
+    if (!teleportReady && !state)
         onSwitch.enabled = NO;
 
     /*
@@ -296,7 +319,7 @@ return cell;
 // when user tap the row, what action you want to perform
 - (void)tableView:(UITableView *)theTableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    NSLog(@"selected %d row", indexPath.row);
+    NSLog(@"selected %ld row", (long)indexPath.row);
 }
 
 @end

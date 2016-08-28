@@ -1,13 +1,18 @@
 #import "Teleporter.h"
 
 @implementation Teleporter {
-    // Private instance variables
-    //double val;
+    double deltaX;
+    double deltaY;
+    double deltaZ;
+
+    BOOL startedOnce;
+
 }
 
 @synthesize targetX;
 @synthesize targetY;
 @synthesize targetZ;
+@synthesize isActive;
 
 - (id)initWithLatitude:(double)x Longitude:(double)y Altitude:(double)z {
 
@@ -23,8 +28,15 @@
 }
 
 
-- (void)drive {
+- (void)logCoordinates {
     NSLog(@"coords: %f, %f, %f", targetX, targetY, targetZ);
+    if (isActive) { 
+        NSLog(@"Teleporter active");
+    }
+    NSLog(@"Teleporter inactive");
 }
 
+
+
 @end
+

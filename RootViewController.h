@@ -13,11 +13,13 @@ typedef enum {
 @property (readonly, nonatomic) BOOL validLatitude;
 @property (readonly, nonatomic) BOOL validLongitude;
 @property (readonly, nonatomic) BOOL validAltitude;
-@property (readonly, nonatomic) BOOL transportReady;
+@property (readonly, nonatomic) BOOL teleportReady;
 
 @property (readonly, nonatomic) double latitude;
 @property (readonly, nonatomic) double longitude;
 @property (readonly, nonatomic) double altitude;
+
+- (void)resetDefaults;
 
 
 @end
