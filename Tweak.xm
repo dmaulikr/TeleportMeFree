@@ -98,6 +98,7 @@ void updateCoordinates();
 
     - (CLLocationCoordinate2D)coordinate {
         [controller updatePrefs];
+        [controller updateTargets];
         if ([prefs[@"isReady"] boolValue])
             NSLog(@"Transporter READY! Would do stuff here.");
         else

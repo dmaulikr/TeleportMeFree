@@ -39,12 +39,22 @@
 }
 
 - (void)updateTargets {
-    //if (not valid coordinates OR bad plist)
-    //   return
-    NSLog(@"Defaults are: %@", [defs description]);
-   //targetX = [defs doubleForKey:@"Latitude"];
-   //targetY = [defs doubleForKey:@"Longitude"];
-   //targetZ = [defs doubleForKey:@"Altitude"];
+    if (!prefs[@"fubaz"])
+        NSLog(@"[CONTROLLER]prefs didn't have fubaz(expected)");
+
+    if (prefs[@"isReady"] && [prefs[@"isReady"] boolValue]) {
+        NSLog(@"[CONTROLLER]dictionary has isready!");
+        targetX = [[prefs objectForKey:@"Latitude"] doubleValue];
+        targetY = [[prefs objectForKey:@"Longitude"] doubleValue];
+        targetZ = [[prefs objectForKey:@"Altitude"] doubleValue];
+
+        NSLog(@"[CONTROLLER]TargetX,Y,Z: %f, %f, %f", targetX, targetY, targetZ);
+    }
+    else if (![prefs[@"isReady"] boolValue])
+        NSLog(@"[CONTROLLER]transporter wasn't ready");
+    else 
+        NSLog(@"[CONTROLLER]there was no isReady in the dictionary");
+       
 }
 
 - (void)updatePrefs {
