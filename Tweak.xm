@@ -27,6 +27,7 @@ BOOL activated = false;
 
 //static void reloadPrefs_iOS8();
 static void reloadPrefs();
+void updateCoordinates();
 
 %ctor {
     //controller = [[TweakController alloc] init];
@@ -95,8 +96,11 @@ static void reloadPrefs();
       }
 
     - (CLLocationCoordinate2D)coordinate {
-        reloadPrefs();
-        NSLog(@"Getting 2d coordinates. Dictionary: %@", [prefs description]);
+        updateCoordinates();
+        if ([prefs[@"isReady"] boolValue])
+            NSLog(@"Transporter READY! Would do stuff here.");
+        else
+            NSLog(@"Detected INVALID COORDINATES for transporter");
 
         return %orig;
 
@@ -175,8 +179,13 @@ static void reloadPrefs() {
         NSLog(@" Tweak.xm failed to set prefs.");
     else
         NSLog(@" Prefs was updated. Dictionary is as follows: %@", [prefs description]);
+}
 
-    if (prefs[@"isReady"]) {
+void updateCoordinates() {
+    if (!prefs[@"fubaz"])
+        NSLog(@"prefs didn't have fubaz(expected)");
+
+    if (prefs[@"isReady"] && [prefs[@"isReady"] boolValue]) {
         NSLog(@"dictionary has isready!");
         targetX = [[prefs objectForKey:@"Latitude"] doubleValue];
         targetY = [[prefs objectForKey:@"Longitude"] doubleValue];
@@ -184,6 +193,9 @@ static void reloadPrefs() {
 
         NSLog(@"TargetX,Y,Z: %f, %f, %f", targetX, targetY, targetZ);
     }
-    else
-        NSLog(@"failed to find isready.Exiting.");
+    else if (![prefs[@"isReady"] boolValue])
+        NSLog(@"transporter wasn't ready");
+    else 
+        NSLog(@"there was no isReady in the dictionary");
+
 }
