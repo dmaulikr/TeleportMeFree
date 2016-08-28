@@ -16,7 +16,7 @@
 #include <stdlib.h>
 
 #define ARC4RANDOM_MAX    0x100000000
-//TweakController *controller = nil;
+TweakController *controller = nil;
 NSDictionary* prefs = nil;
 
 double deltaX, deltaY, deltaZ;
@@ -35,6 +35,7 @@ void updateCoordinates();
     reloadPrefs();
     deltaX = deltaY = deltaZ = targetX = targetY = targetZ = 0;
     NSLog(@"Constructor call. Vals for deltas and targets: %f, %f, %f, %f, %f, %f", deltaX, deltaY, deltaZ, targetX, targetY, targetZ);
+    controller = [[TweakController alloc] init];
 }
 
 
@@ -96,7 +97,7 @@ void updateCoordinates();
       }
 
     - (CLLocationCoordinate2D)coordinate {
-        updateCoordinates();
+        [controller updatePrefs];
         if ([prefs[@"isReady"] boolValue])
             NSLog(@"Transporter READY! Would do stuff here.");
         else
