@@ -13,7 +13,9 @@
 #import "TweakController.h"
 #import <CoreLocation/CLLocation.h>
 #import <CoreLocation/CLHeading.h>
+#import <Cephei/HBPreferences.h>
 #include <stdlib.h>
+
 
 #define ARC4RANDOM_MAX    0x100000000
 TweakController *controller = nil;
@@ -29,6 +31,14 @@ BOOL activated = false;
 static void reloadPrefs();
 void updateCoordinates();
 
+static NSString *const kHBCBPreferencesDomain = @"ws.hbang.cobalia";
+static NSString *const kHBCBPreferencesEnabledKey = @"Enabled";
+//static NSString *const kHBCBPreferencesSwitchesKey = @"Switches";
+static NSString *const kHBCBPreferencesSectionLabelKey = @"SectionLabel";
+static NSString *const kHBCBPreferencesSwitchLabelsKey = @"SwitchLabels";
+
+HBPreferences *preferences;
+
 %ctor {
     //controller = [[TweakController alloc] init];
     //reloadPrefs_iOS8();
@@ -36,6 +46,15 @@ void updateCoordinates();
     deltaX = deltaY = deltaZ = targetX = targetY = targetZ = 0;
     NSLog(@"Constructor call. Vals for deltas and targets: %f, %f, %f, %f, %f, %f", deltaX, deltaY, deltaZ, targetX, targetY, targetZ);
     controller = [[TweakController alloc] init];
+
+    preferences = [[HBPreferences alloc] initWithIdentifier:kHBCBPreferencesDomain];
+
+    [preferences registerDefaults:@{
+        kHBCBPreferencesEnabledKey: @YES,
+       // kHBCBPreferencesSwitchesKey: @[ /* ... */ ],
+        kHBCBPreferencesSectionLabelKey: @YES,
+        kHBCBPreferencesSwitchLabelsKey: @YES
+    }];
 }
 
 
