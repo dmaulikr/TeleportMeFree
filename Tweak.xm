@@ -31,10 +31,10 @@ BOOL activated = false;
 static void reloadPrefs();
 void updateCoordinates();
 
-static NSString *const kHBCBPreferencesDomain = @"ws.hbang.cobalia";
+static NSString *const kHBCBPreferencesDomain = @"co.jalby.iteleport";
 static NSString *const kHBCBPreferencesEnabledKey = @"Enabled";
 //static NSString *const kHBCBPreferencesSwitchesKey = @"Switches";
-static NSString *const kHBCBPreferencesSectionLabelKey = @"SectionLabel";
+static NSString *const kHBCBPreferencesLatitudeKey = @"Latitude";
 static NSString *const kHBCBPreferencesSwitchLabelsKey = @"SwitchLabels";
 
 HBPreferences *preferences;
@@ -52,7 +52,7 @@ HBPreferences *preferences;
     [preferences registerDefaults:@{
         kHBCBPreferencesEnabledKey: @YES,
        // kHBCBPreferencesSwitchesKey: @[ /* ... */ ],
-        kHBCBPreferencesSectionLabelKey: @YES,
+        kHBCBPreferencesLatitudeKey: @YES,
         kHBCBPreferencesSwitchLabelsKey: @YES
     }];
 }
@@ -116,20 +116,23 @@ HBPreferences *preferences;
       }
 
     - (CLLocationCoordinate2D)coordinate {
-        [controller updatePrefs];
+        NSLog(@"[TWEAK.XM]Printing HBPreferences LATITUDE: %f", [preferences doubleForKey:kHBCBPreferencesLatitudeKey]);
         [controller updateTargets];
-        if ([prefs[@"isReady"] boolValue])
+        if ([controller.prefs[@"isReady"] boolValue])
             NSLog(@"Transporter READY! Would do stuff here.");
-        else
+        else {
             NSLog(@"Detected INVALID COORDINATES for transporter");
+            return %orig;
+         }
 
-        return %orig;
+         return %orig;
+
 
          CLLocationCoordinate2D newCoords = %orig;
 
          if (!startedOnce) {
-            deltaX = targetX - newCoords.latitude;
-            deltaY = targetY - newCoords.longitude;
+            deltaX = controller.targetX - newCoords.latitude;
+            deltaY = controller.targetY - newCoords.longitude;
             startedOnce = YES;
         }
 
@@ -146,10 +149,15 @@ HBPreferences *preferences;
     }
     
     - (CLLocationDistance)altitude {
-        return %orig;
+       [controller updateTargets];
+       if (![controller.prefs[@"isReady"] boolValue]) {
+       return %orig;
+       }
+
+       return %orig;
     NSInteger current = [self currentSecond];
     if (current  % 12 == 0) {
-       deltaZ = targetZ - %orig;
+       deltaZ = controller.targetZ - %orig;
     }
     CLLocationDistance modAlt = %orig + deltaZ;
 
