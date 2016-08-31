@@ -31,12 +31,6 @@ BOOL activated = false;
 static void reloadPrefs();
 void updateCoordinates();
 
-static NSString *const kHBCBPreferencesDomain = @"co.jalby.iteleport";
-static NSString *const kHBCBPreferencesEnabledKey = @"Enabled";
-//static NSString *const kHBCBPreferencesSwitchesKey = @"Switches";
-static NSString *const kHBCBPreferencesLatitudeKey = @"Latitude";
-static NSString *const kHBCBPreferencesSwitchLabelsKey = @"SwitchLabels";
-
 HBPreferences *preferences;
 
 %ctor {
@@ -46,15 +40,6 @@ HBPreferences *preferences;
     deltaX = deltaY = deltaZ = targetX = targetY = targetZ = 0;
     NSLog(@"Constructor call. Vals for deltas and targets: %f, %f, %f, %f, %f, %f", deltaX, deltaY, deltaZ, targetX, targetY, targetZ);
     controller = [[TweakController alloc] init];
-
-    preferences = [[HBPreferences alloc] initWithIdentifier:kHBCBPreferencesDomain];
-
-    [preferences registerDefaults:@{
-        kHBCBPreferencesEnabledKey: @YES,
-       // kHBCBPreferencesSwitchesKey: @[ /* ... */ ],
-        kHBCBPreferencesLatitudeKey: @YES,
-        kHBCBPreferencesSwitchLabelsKey: @YES
-    }];
 }
 
 
@@ -116,9 +101,8 @@ HBPreferences *preferences;
       }
 
     - (CLLocationCoordinate2D)coordinate {
-        NSLog(@"[TWEAK.XM]Printing HBPreferences LATITUDE: %f", [preferences doubleForKey:kHBCBPreferencesLatitudeKey]);
         [controller updateTargets];
-        if ([controller.prefs[@"isReady"] boolValue])
+        if (controller.teleportOn)
             NSLog(@"Transporter READY! Would do stuff here.");
         else {
             NSLog(@"Detected INVALID COORDINATES for transporter");
@@ -150,8 +134,8 @@ HBPreferences *preferences;
     
     - (CLLocationDistance)altitude {
        [controller updateTargets];
-       if (![controller.prefs[@"isReady"] boolValue]) {
-       return %orig;
+       if (controller.teleportOn) {
+       NSLog(@"[TWEAK] Tweak saw teleport was on");
        }
 
        return %orig;

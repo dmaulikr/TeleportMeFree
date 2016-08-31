@@ -52,7 +52,11 @@
 
     defaults = [NSUserDefaults standardUserDefaults];
     if (defaults == nil)
-        NSLog(@"WARNING: NSDefaults incorrectly set.");
+        NSLog(@"[GUI]WARNING: NSDefaults incorrectly set.");
+
+    NSString *cepheiRefresh = @"co.jalby.iteleport/ReloadPrefs";
+    [defaults setObject:cepheiRefresh forKey:@"PostNotification"];
+    [defaults synchronize];
 }
 
 #pragma mark - UITableViewDataSource
@@ -309,7 +313,12 @@ return cell;
     NSLog(state ? @"Button ON" : @"Button OFF");
     if (!teleportReady && !state)
         onSwitch.enabled = NO;
+    if (state)
+        [defaults setBool:YES forKey:@"ButtonOn"];
+    else
+        [defaults setBool:NO forKey:@"ButtonOn"];
 
+    [defaults synchronize];
     /*
     if (validLatitude){NSLog(@"Latitude Valid");}
     if (validLongitude){NSLog(@"Longitude Valid");}

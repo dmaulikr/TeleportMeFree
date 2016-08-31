@@ -6,12 +6,10 @@
 @property (nonatomic) double targetY;
 @property (nonatomic) double targetZ;
 
-@property (nonatomic, retain) NSDictionary* prefs;
-@property (nonatomic, readonly) BOOL isReady;
-@property (nonatomic, readonly) BOOL isActive;
+@property (nonatomic, readonly) BOOL teleportOn;
 
 - (void)logCoordinates;
 - (void)updateTargets;
-- (void)updatePrefs;
+//- (void)updatePrefs;
 
 @end
