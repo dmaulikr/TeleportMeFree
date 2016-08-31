@@ -10,8 +10,6 @@
 @property (nonatomic, readonly) BOOL isReady;
 @property (nonatomic, readonly) BOOL isActive;
 
-- (id)initWithPrefs:(NSDictionary*)_prefs;
-
 - (void)logCoordinates;
 - (void)updateTargets;
 - (void)updatePrefs;

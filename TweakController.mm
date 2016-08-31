@@ -1,4 +1,11 @@
 #import "TweakController.h"
+#import <Cephei/HBPreferences.h>
+static NSString *const kHBCBPreferencesDomain = @"co.jalby.iteleport";
+static NSString *const kHBCBPreferencesEnabledKey = @"Enabled";
+//static NSString *const kHBCBPreferencesSwitchesKey = @"Switches";
+static NSString *const kHBCBPreferencesLatitudeKey = @"Latitude";
+static NSString *const kHBCBPreferencesSwitchLabelsKey = @"SwitchLabels";
+
 
 @implementation TweakController {
     double deltaX;
@@ -6,6 +13,8 @@
     double deltaZ;
     NSDictionary *defs;
     BOOL startedOnce;
+
+    HBPreferences *preferences;
 
 }
 
@@ -16,7 +25,8 @@
 @synthesize isReady;
 @synthesize prefs;
 
-//iOS 8
+
+ /*
 - (id)initWithPrefs:(NSDictionary*)_prefs {
 
     if( self = [super init] )
@@ -26,6 +36,19 @@
 
     return self;
 
+}*/
+
+- (id)init {
+    preferences = [[HBPreferences alloc] initWithIdentifier:kHBCBPreferencesDomain];
+
+    [preferences registerDefaults:@{
+        kHBCBPreferencesEnabledKey: @YES,
+       // kHBCBPreferencesSwitchesKey: @[ /* ... */ ],
+        kHBCBPreferencesLatitudeKey: @YES,
+        kHBCBPreferencesSwitchLabelsKey: @YES
+    }];
+
+    return self;
 }
 
 - (void)logCoordinates {
@@ -39,6 +62,7 @@
 }
 
 - (void)updateTargets {
+    NSLog(@"[CONTROLLER]Printing HBPreferences LATITUDE: %f", [preferences doubleForKey:kHBCBPreferencesLatitudeKey]);
     if (!prefs[@"fubaz"])
         NSLog(@"[CONTROLLER]prefs didn't have fubaz(expected)");
 
