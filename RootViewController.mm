@@ -13,8 +13,6 @@
     @synthesize longitude;
     @synthesize altitude;
 
-    NSUserDefaults *defaults;
-
 - (void)resetDefaults
  {
     NSUserDefaults * defs = [NSUserDefaults standardUserDefaults];
@@ -56,6 +54,8 @@
 
     NSString *cepheiRefresh = @"co.jalby.iteleport/ReloadPrefs";
     [defaults setObject:cepheiRefresh forKey:@"PostNotification"];
+    [defaults setBool:NO forKey:@"CoordinatesUpdated"];
+    [defaults setBool:NO forKey:@"TeleporterOn"];
     [defaults synchronize];
 }
 
@@ -174,8 +174,7 @@ return cell;
     UITextField *textField = (UITextField *)sender;
     NSString *checkString = textField.text;
     teleportReady = NO;
-    [defaults setBool:NO forKey:@"isReady"];
-    [defaults synchronize];
+
     if (!onSwitch.isOn)
         onSwitch.enabled = NO;
 
@@ -187,7 +186,7 @@ return cell;
         NSLog(@"BAD NUMBER DETECTED!");
         return;
     }
-    //otherwise we have a number
+    //otherwise we have a valid number
     NSString *fixedCheck = [checkString stringByReplacingOccurrencesOfString:@"," withString:@"."];
     double checkValue = [fixedCheck doubleValue];
 
@@ -208,8 +207,7 @@ return cell;
             validLatitude = YES;
             latitude = checkValue;
             [defaults setDouble:latitude forKey:@"Latitude"];
-            [defaults synchronize];
-            NSLog(@"Stored %f in dictionary for LATITUDE. Dictionary is: %@",latitude, [[NSUserDefaults standardUserDefaults] dictionaryRepresentation]);
+            NSLog(@"Stored %f in dictionary for LATITUDE.",latitude);
             break;
 
         case LONGITUDE:
@@ -220,8 +218,7 @@ return cell;
             validLongitude = YES;
             longitude = checkValue;
             [defaults setDouble:longitude forKey:@"Longitude"];
-            [defaults synchronize];
-            NSLog(@"Stored %f in dictionary for LONGITUDE. Dictionary is: %@",latitude, [defaults dictionaryRepresentation]);
+            NSLog(@"Stored %f in dictionary for LONGITUDE.",longitude);
             break;
 
         case ALTITUDE:
@@ -229,7 +226,7 @@ return cell;
             altitude = checkValue;
             [defaults setDouble:altitude forKey:@"Altitude"];
             [defaults synchronize];
-            NSLog(@"Stored %f in dictionary for ALTITUDE. Dictionary is: %@",latitude, [defaults dictionaryRepresentation]);
+            NSLog(@"Stored %f in dictionary for ALTITUDE.", altitude);
             break;
             
         default:
@@ -237,13 +234,15 @@ return cell;
             break;   
     }
 
+    [defaults setBool:YES forKey:@"CoordinatesUpdated"];
+    [defaults synchronize];
+    NSLog(@"Dictionary is: %@", [defaults dictionaryRepresentation]);
     //clear error image if we made it out alive
     textField.rightViewMode = UITextFieldViewModeNever;
     textField.rightView = nil;
 
     if (validLatitude && validLongitude && validAltitude) {
         teleportReady = onSwitch.enabled = YES;
-        [defaults setBool:YES forKey:@"isReady"];
         [defaults synchronize];
         return;
     }
@@ -313,10 +312,14 @@ return cell;
     NSLog(state ? @"Button ON" : @"Button OFF");
     if (!teleportReady && !state)
         onSwitch.enabled = NO;
-    if (state)
-        [defaults setBool:YES forKey:@"ButtonOn"];
-    else
-        [defaults setBool:NO forKey:@"ButtonOn"];
+    if (state) {
+        NSLog(@"[GUI] set buttonOn to YES");
+        [defaults setBool:YES forKey:@"TeleporterOn"];
+    }
+    else{
+        [defaults setBool:NO forKey:@"TeleporterOn"];
+        NSLog(@"[GUI] set buttonOn to NO");
+    }
 
     [defaults synchronize];
     /*

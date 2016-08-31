@@ -10,71 +10,51 @@
 //
 //
 ///////////////////////////////////////////
-#import "TweakController.h"
 #import <CoreLocation/CLLocation.h>
 #import <CoreLocation/CLHeading.h>
 #import <Cephei/HBPreferences.h>
 #include <stdlib.h>
 
-
 #define ARC4RANDOM_MAX    0x100000000
-TweakController *controller = nil;
-NSDictionary* prefs = nil;
 
 double deltaX, deltaY, deltaZ;
 double targetX, targetY, targetZ;
 
-BOOL startedOnce = false;
-BOOL activated = false;
+BOOL enabled = false;
+BOOL updated = false;
 
-//static void reloadPrefs_iOS8();
-static void reloadPrefs();
-void updateCoordinates();
+static NSString *const kHBCBPreferencesDomain = @"co.jalby.iteleport";
+static NSString *const kHBCBPreferencesEnabledKey = @"TeleporterOn";
+static NSString *const kHBCBPreferencesLatitudeKey = @"Latitude";
+static NSString *const kHBCBPreferencesLongitudeKey = @"Longitude";
+static NSString *const kHBCBPreferencesAltitudeKey = @"Altitude";
+static NSString *const kHBCBPreferencesUpdatedKey = @"CoordinatesUpdated";
 
 HBPreferences *preferences;
 
 %ctor {
-    //controller = [[TweakController alloc] init];
-    //reloadPrefs_iOS8();
-    reloadPrefs();
     deltaX = deltaY = deltaZ = targetX = targetY = targetZ = 0;
-    NSLog(@"Constructor call. Vals for deltas and targets: %f, %f, %f, %f, %f, %f", deltaX, deltaY, deltaZ, targetX, targetY, targetZ);
-    controller = [[TweakController alloc] init];
+
+    preferences = [[HBPreferences alloc] initWithIdentifier:kHBCBPreferencesDomain];
+
+    [preferences registerDefaults:@{
+        kHBCBPreferencesEnabledKey: @NO,
+        kHBCBPreferencesUpdatedKey: @NO,
+        kHBCBPreferencesLatitudeKey: @0,
+        kHBCBPreferencesLongitudeKey: @0,
+        kHBCBPreferencesAltitudeKey: @0
+    }];
+
+    [preferences registerBool:&enabled default:NO forKey:kHBCBPreferencesEnabledKey];
+    [preferences registerBool:&updated default:NO forKey:kHBCBPreferencesUpdatedKey];
+    [preferences registerDouble:&targetX default:0 forKey:kHBCBPreferencesLatitudeKey];
+    [preferences registerDouble:&targetY default:0 forKey:kHBCBPreferencesLongitudeKey];
+    [preferences registerDouble:&targetZ default:0 forKey:kHBCBPreferencesAltitudeKey];
 }
-
-
-%hook CLHeading
-
-    -(void)setCLHeadingComponentValue:(CLHeadingComponentValue)z {
-    CLHeadingComponentValue newZ = 5.43;
-    %orig(newZ);
-    }
-
-- (CLHeadingComponentValue)x {
-    NSLog(@"someone is getting X heading...");
-    return %orig;
-    }
-
-- (CLHeadingComponentValue)y {
-    NSLog(@"someone is getting Y heading...");
-    return %orig;
-    }
-    - (CLHeadingComponentValue)z {
-    NSLog(@"someone is getting Z heading...");
-    CLHeadingComponentValue modZ = 4.92;
-    return modZ;
-    }
-
-  - (NSString*)description {
-    NSLog(@"someone is getting heading description.");
-    return %orig;
-    }
-%end
 
 @interface CLLocation() 
     - (NSInteger)currentSecond; 
     - (double)fuzzy;
-    - (CLLocationCoordinate2D) CLLocationCoordinate2DMake: (CLLocationDegrees)latitude : (CLLocationDegrees)longitude;
 @end
 
 %hook CLLocation
@@ -101,114 +81,45 @@ HBPreferences *preferences;
       }
 
     - (CLLocationCoordinate2D)coordinate {
-        [controller updateTargets];
-        if (controller.teleportOn)
-            NSLog(@"Transporter READY! Would do stuff here.");
-        else {
-            NSLog(@"Detected INVALID COORDINATES for transporter");
+        NSLog(@"[TWEAK] Coordinates from prefs (variables): %f, %f, %f", targetX, targetY, targetZ);
+        NSLog(@"[TWEAK] Coordinates from prefs (RAW): %f, %f, %f", [preferences doubleForKey:kHBCBPreferencesLatitudeKey], [preferences doubleForKey:kHBCBPreferencesLongitudeKey], [preferences doubleForKey:kHBCBPreferencesAltitudeKey]);
+        if (![preferences boolForKey:kHBCBPreferencesEnabledKey]) {
+            NSLog(@"[TWEAK] Tweak detected BUTTON OFF.");
             return %orig;
-         }
-
-         return %orig;
-
+        }
 
          CLLocationCoordinate2D newCoords = %orig;
 
-         if (!startedOnce) {
-            deltaX = controller.targetX - newCoords.latitude;
-            deltaY = controller.targetY - newCoords.longitude;
-            startedOnce = YES;
+         if ([preferences boolForKey:kHBCBPreferencesUpdatedKey]) {
+            NSLog(@"[TWEAK] Tweak detected new coordinates. Updating deltas...");
+            deltaX = [preferences doubleForKey:kHBCBPreferencesLatitudeKey] - newCoords.latitude;
+            deltaY = [preferences doubleForKey:kHBCBPreferencesLongitudeKey] - newCoords.longitude;
+            [preferences setBool:NO forKey:kHBCBPreferencesUpdatedKey];
         }
+        else
+            NSLog(@"[TWEAK] Tweak didn't detect coordinates need updating.");
 
         newCoords.latitude += deltaX;
         newCoords.longitude += deltaY;
         NSLog(@"here are current coordinates:%f and %f", newCoords.latitude, newCoords.longitude);
-        //return [self CLLocationCoordinate2DMake: targetX: targetY];
         return newCoords;
-    }
-
-    -(void)setAltitude:(CLLocationDistance)altitude {
-     CLLocationDistance setAlt = 4.32;
-     %orig(setAlt);
     }
     
     - (CLLocationDistance)altitude {
-       [controller updateTargets];
-       if (controller.teleportOn) {
-       NSLog(@"[TWEAK] Tweak saw teleport was on");
-       }
+        if (![preferences boolForKey:kHBCBPreferencesEnabledKey])
+            return %orig;
 
-       return %orig;
-    NSInteger current = [self currentSecond];
-    if (current  % 12 == 0) {
-       deltaZ = controller.targetZ - %orig;
-    }
-    CLLocationDistance modAlt = %orig + deltaZ;
+        NSInteger current = [self currentSecond];
+        if (current  % 12 == 0) {
+            //deltaZ = controller.targetZ - %orig;
+        }
+        CLLocationDistance modAlt = %orig + deltaZ;
 
-    if (modAlt > targetZ + 10.0 || modAlt < targetZ - 10.0)
-        modAlt = targetZ + [self fuzzy];
-    if (modAlt < 0)
-        modAlt = modAlt * -1;
-    return modAlt;
+        if (modAlt > targetZ + 10.0 || modAlt < targetZ - 10.0)
+            modAlt = targetZ + [self fuzzy];
+        if (modAlt < 0)
+            modAlt = modAlt * -1;
+        return modAlt;
     }
     
 %end
-
-//---Functions-----
-/*
-static void reloadPrefs_iOS8() {
-    // Check if system app (all system apps have this as their home directory). This path may change but it's unlikely.
-    BOOL isSystem = [NSHomeDirectory() isEqualToString:@"/var/mobile"];
-    // Retrieve preferences
-    if(isSystem) {
-        CFArrayRef keyList = CFPreferencesCopyKeyList(CFSTR("co.jably.iteleport"), kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-        if(keyList) {
-            controller.prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, CFSTR("co.jalby.iteleport"), kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-            if(!controller.prefs) controller.prefs = [NSDictionary new];
-            CFRelease(keyList);
-        }
-    }else {
-        controller.prefs = [NSDictionary dictionaryWithContentsOfFile:@"/User/Library/Preferences/co.jalby.iteleport.plist"];
-    }
-}
-*/
-static void reloadPrefs() {
-    // Check if system app (all system apps have this as their home directory). This path may change but it's unlikely.
-    BOOL isSystem = [NSHomeDirectory() isEqualToString:@"/var/mobile"];
-    // Retrieve preferences
-    prefs = nil;
-    if(isSystem) {
-        CFArrayRef keyList = CFPreferencesCopyKeyList(CFSTR("co.jalby.iteleport"), kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-        if(keyList) {
-            prefs = (NSDictionary *)CFPreferencesCopyMultiple(keyList, CFSTR("co.jalby.iteleport"), kCFPreferencesCurrentUser, kCFPreferencesAnyHost);
-            if(!prefs) prefs = [NSDictionary new];
-            CFRelease(keyList);
-        }
-    }else {
-        prefs = [NSDictionary dictionaryWithContentsOfFile:@"/User/Library/Preferences/co.jalby.iteleport.plist"];
-    }
-    NSLog(@" Tweak.xm received call to reloadPrefs.");
-    if (prefs == nil)
-        NSLog(@" Tweak.xm failed to set prefs.");
-    else
-        NSLog(@" Prefs was updated. Dictionary is as follows: %@", [prefs description]);
-}
-
-void updateCoordinates() {
-    if (!prefs[@"fubaz"])
-        NSLog(@"prefs didn't have fubaz(expected)");
-
-    if (prefs[@"isReady"] && [prefs[@"isReady"] boolValue]) {
-        NSLog(@"dictionary has isready!");
-        targetX = [[prefs objectForKey:@"Latitude"] doubleValue];
-        targetY = [[prefs objectForKey:@"Longitude"] doubleValue];
-        targetZ = [[prefs objectForKey:@"Altitude"] doubleValue];
-
-        NSLog(@"TargetX,Y,Z: %f, %f, %f", targetX, targetY, targetZ);
-    }
-    else if (![prefs[@"isReady"] boolValue])
-        NSLog(@"transporter wasn't ready");
-    else 
-        NSLog(@"there was no isReady in the dictionary");
-
-}
