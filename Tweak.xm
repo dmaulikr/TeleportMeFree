@@ -22,6 +22,7 @@ double targetX, targetY, targetZ;
 
 BOOL enabled = false;
 BOOL updated = false;
+BOOL startedOnce = false;
 
 static NSString *const kHBCBPreferencesDomain = @"co.jalby.iteleport";
 static NSString *const kHBCBPreferencesEnabledKey = @"TeleporterOn";
@@ -45,7 +46,7 @@ HBPreferences *preferences;
         kHBCBPreferencesAltitudeKey: @0
     }];
 
-    [preferences registerBool:&enabled default:NO forKey:kHBCBPreferencesEnabledKey];
+    enabled = [preferences boolForKey:kHBCBPreferencesEnabledKey];
     [preferences registerBool:&updated default:NO forKey:kHBCBPreferencesUpdatedKey];
     [preferences registerDouble:&targetX default:0 forKey:kHBCBPreferencesLatitudeKey];
     [preferences registerDouble:&targetY default:0 forKey:kHBCBPreferencesLongitudeKey];
@@ -81,6 +82,9 @@ HBPreferences *preferences;
       }
 
     - (CLLocationCoordinate2D)coordinate {
+        if (enabled) {NSLog(@"buttonOn");}
+        else
+            NSLog(@"buttonOff");
         NSLog(@"[TWEAK] Coordinates from prefs (variables): %f, %f, %f", targetX, targetY, targetZ);
         NSLog(@"[TWEAK] Coordinates from prefs (RAW): %f, %f, %f", [preferences doubleForKey:kHBCBPreferencesLatitudeKey], [preferences doubleForKey:kHBCBPreferencesLongitudeKey], [preferences doubleForKey:kHBCBPreferencesAltitudeKey]);
         if (![preferences boolForKey:kHBCBPreferencesEnabledKey]) {
@@ -90,15 +94,17 @@ HBPreferences *preferences;
 
          CLLocationCoordinate2D newCoords = %orig;
 
-         if ([preferences boolForKey:kHBCBPreferencesUpdatedKey]) {
+         if ([preferences boolForKey:kHBCBPreferencesUpdatedKey] || !startedOnce) {
             NSLog(@"[TWEAK] Tweak detected new coordinates. Updating deltas...");
             deltaX = [preferences doubleForKey:kHBCBPreferencesLatitudeKey] - newCoords.latitude;
             deltaY = [preferences doubleForKey:kHBCBPreferencesLongitudeKey] - newCoords.longitude;
             [preferences setBool:NO forKey:kHBCBPreferencesUpdatedKey];
+            startedOnce = true;
         }
         else
             NSLog(@"[TWEAK] Tweak didn't detect coordinates need updating.");
 
+        NSLog(@"[TWEAK] Tweak deltas are: %f, %f", deltaX, deltaY);
         newCoords.latitude += deltaX;
         newCoords.longitude += deltaY;
         NSLog(@"here are current coordinates:%f and %f", newCoords.latitude, newCoords.longitude);

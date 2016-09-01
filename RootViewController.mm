@@ -18,11 +18,10 @@
     NSUserDefaults * defs = [NSUserDefaults standardUserDefaults];
     NSDictionary * dict = [defs dictionaryRepresentation];
     for (id key in dict) {
-        [defs removeObjectForKey:key];
+	[defs removeObjectForKey:key];
     }
     [defs synchronize];
 }
-
 
 - (void)loadView {
 	self.view = [[[UIView alloc] initWithFrame:[[UIScreen mainScreen] applicationFrame]] autorelease];
@@ -50,12 +49,11 @@
 
     defaults = [NSUserDefaults standardUserDefaults];
     if (defaults == nil)
-        NSLog(@"[GUI]WARNING: NSDefaults incorrectly set.");
+	NSLog(@"[GUI]WARNING: NSDefaults incorrectly set.");
 
     NSString *cepheiRefresh = @"co.jalby.iteleport/ReloadPrefs";
     [defaults setObject:cepheiRefresh forKey:@"PostNotification"];
-    [defaults setBool:NO forKey:@"CoordinatesUpdated"];
-    [defaults setBool:NO forKey:@"TeleporterOn"];
+    [defaults setObject:@NO forKey:@"CoordinatesUpdated"];
     [defaults synchronize];
 }
 
@@ -93,18 +91,18 @@
 		    playerTextField.placeholder = @"±90";
 		    playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
 		    playerTextField.returnKeyType = UIReturnKeyNext;
-            playerTextField.tag = LATITUDE;
+	    playerTextField.tag = LATITUDE;
 		    break;
 		case 1:
 		    playerTextField.placeholder = @"±180";
 		    playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
 		    playerTextField.returnKeyType = UIReturnKeyNext;
-            playerTextField.tag = LONGITUDE;
+	    playerTextField.tag = LONGITUDE;
 		    break;
 		case 2:
 		    playerTextField.placeholder = @"To the moon";
 		    playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
-            playerTextField.tag = ALTITUDE;
+	    playerTextField.tag = ALTITUDE;
 		    break;
 		case 3:
 		    playerTextField.placeholder = @"ERROR";
@@ -120,16 +118,16 @@
 	    [playerTextField setEnabled: YES];
 	    [cell.contentView addSubview:playerTextField];
 	    playerTextField.delegate = self;
-        [playerTextField addTarget:self action:@selector(checkTextField:) forControlEvents:UIControlEventEditingChanged];
+	[playerTextField addTarget:self action:@selector(checkTextField:) forControlEvents:UIControlEventEditingChanged];
 	    [playerTextField release];
     }
     
-        else { //Section for boolean inputs (UISwitches)
+	else { //Section for boolean inputs (UISwitches)
 	       onSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(120, 10, 185, 30)];
 	       [onSwitch setOnTintColor:[UIColor redColor]];
-           [onSwitch addTarget:self action:@selector(setState:) forControlEvents:UIControlEventValueChanged];
-           onSwitch.enabled = NO;
-           [onSwitch setOn:NO];
+	   [onSwitch addTarget:self action:@selector(setState:) forControlEvents:UIControlEventValueChanged];
+	   onSwitch.enabled = NO;
+	   [onSwitch setOn:NO];
 	
 	    if ([indexPath row] == 0) {
 	       cell.textLabel.text = @"Teleport!";
@@ -138,13 +136,13 @@
 	       cell.textLabel.text = @"ERROR!!";
 	    }
 
-        [cell.contentView addSubview:onSwitch];
-        [onSwitch release];
-        }
+	[cell.contentView addSubview:onSwitch];
+	[onSwitch release];
+	}
     }
 
     if ([indexPath section] == 0) { // Latitude and Longitude
-        switch ([indexPath row]) {
+	switch ([indexPath row]) {
 	    case 0: 
 	       cell.textLabel.text = @"Latitude"; 
 	       break;
@@ -157,7 +155,7 @@
 	   default:
 	       cell.textLabel.text = @"ERROR";
 	       break;
-        }
+	}
     }
 
 return cell;	
@@ -176,15 +174,15 @@ return cell;
     teleportReady = NO;
 
     if (!onSwitch.isOn)
-        onSwitch.enabled = NO;
+	onSwitch.enabled = NO;
 
     //check for a valid number
     NSString *expression = @"^(-)?([0-9]{1,5})?([,\\.]([0-9]{1,8})?)?$";
     NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:expression options:NSRegularExpressionCaseInsensitive error:nil];
     NSUInteger numberOfMatches = [regex numberOfMatchesInString:checkString options:0 range:NSMakeRange(0,[checkString length])];
     if ( numberOfMatches == 0 || !checkString.length) {
-        NSLog(@"BAD NUMBER DETECTED!");
-        return;
+	NSLog(@"BAD NUMBER DETECTED!");
+	return;
     }
     //otherwise we have a valid number
     NSString *fixedCheck = [checkString stringByReplacingOccurrencesOfString:@"," withString:@"."];
@@ -199,39 +197,39 @@ return cell;
 
     NSLog(@"Editing textField with tag: %ld", (long)textField.tag);
     switch (textField.tag) {
-        case LATITUDE:
-            if ( checkValue < -90 || checkValue > 90 ) { 
-                validLatitude = NO;
-                return;
-            }
-            validLatitude = YES;
-            latitude = checkValue;
-            [defaults setDouble:latitude forKey:@"Latitude"];
-            NSLog(@"Stored %f in dictionary for LATITUDE.",latitude);
-            break;
+	case LATITUDE:
+	    if ( checkValue < -90 || checkValue > 90 ) { 
+		validLatitude = NO;
+		return;
+	    }
+	    validLatitude = YES;
+	    latitude = checkValue;
+	    [defaults setDouble:latitude forKey:@"Latitude"];
+	    NSLog(@"Stored %f in dictionary for LATITUDE.",latitude);
+	    break;
 
-        case LONGITUDE:
-            if ( checkValue < -180 || checkValue > 180) {
-                validLongitude = NO;
-                return;
-            }
-            validLongitude = YES;
-            longitude = checkValue;
-            [defaults setDouble:longitude forKey:@"Longitude"];
-            NSLog(@"Stored %f in dictionary for LONGITUDE.",longitude);
-            break;
+	case LONGITUDE:
+	    if ( checkValue < -180 || checkValue > 180) {
+		validLongitude = NO;
+		return;
+	    }
+	    validLongitude = YES;
+	    longitude = checkValue;
+	    [defaults setDouble:longitude forKey:@"Longitude"];
+	    NSLog(@"Stored %f in dictionary for LONGITUDE.",longitude);
+	    break;
 
-        case ALTITUDE:
-            validAltitude = YES;
-            altitude = checkValue;
-            [defaults setDouble:altitude forKey:@"Altitude"];
-            [defaults synchronize];
-            NSLog(@"Stored %f in dictionary for ALTITUDE.", altitude);
-            break;
-            
-        default:
-            NSLog(@"ERROR: untagged text field was edited.");
-            break;   
+	case ALTITUDE:
+	    validAltitude = YES;
+	    altitude = checkValue;
+	    [defaults setDouble:altitude forKey:@"Altitude"];
+	    [defaults synchronize];
+	    NSLog(@"Stored %f in dictionary for ALTITUDE.", altitude);
+	    break;
+	    
+	default:
+	    NSLog(@"ERROR: untagged text field was edited.");
+	    break;   
     }
 
     [defaults setBool:YES forKey:@"CoordinatesUpdated"];
@@ -242,9 +240,9 @@ return cell;
     textField.rightView = nil;
 
     if (validLatitude && validLongitude && validAltitude) {
-        teleportReady = onSwitch.enabled = YES;
-        [defaults synchronize];
-        return;
+	teleportReady = onSwitch.enabled = YES;
+	[defaults synchronize];
+	return;
     }
 
     teleportReady = NO;
@@ -258,44 +256,44 @@ return cell;
     //Undo bug crash check
     if(range.length + range.location > textField.text.length)
     {
-        return NO;
+	return NO;
     }
 
     if (string.length > 15)
-        return NO;
+	return NO;
 
     NSString *checkString = [textField.text stringByReplacingCharactersInRange:range withString:string];
 
     //empty field OK
     if (!checkString.length)
-        return YES;
+	return YES;
 
     if ([checkString isEqualToString:@"-"])
-        return YES;
+	return YES;
 
     NSString *expression = nil;
 
     switch (textField.tag) {
-        case LATITUDE:
-            expression = @"^(-)?([0-9]{1,2})?([,\\.]([0-9]{1,8})?)?$";
-            break;
-        case LONGITUDE:
-            expression = @"^(-)?([0-9]{1,3})?([,\\.]([0-9]{1,8})?)?$";
-            break;
-        case ALTITUDE:
-            expression = @"^(-)?([0-9]{1,5})?([,\\.]([0-9]{1,8})?)?$";
-            break;
-        default:
-            NSLog(@"ERROR: Invalid textfield. Maybe no tag?");
-            return NO;
-            break;
+	case LATITUDE:
+	    expression = @"^(-)?([0-9]{1,2})?([,\\.]([0-9]{1,8})?)?$";
+	    break;
+	case LONGITUDE:
+	    expression = @"^(-)?([0-9]{1,3})?([,\\.]([0-9]{1,8})?)?$";
+	    break;
+	case ALTITUDE:
+	    expression = @"^(-)?([0-9]{1,5})?([,\\.]([0-9]{1,8})?)?$";
+	    break;
+	default:
+	    NSLog(@"ERROR: Invalid textfield. Maybe no tag?");
+	    return NO;
+	    break;
     }
 
     NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:expression options:NSRegularExpressionCaseInsensitive error:nil];
     NSUInteger numberOfMatches = [regex numberOfMatchesInString:checkString options:0 range:NSMakeRange(0,[checkString length])];
 
     if (numberOfMatches == 0)
-        return NO;
+	return NO;
 
     return YES;
 }
@@ -311,14 +309,14 @@ return cell;
     BOOL state = [sender isOn];
     NSLog(state ? @"Button ON" : @"Button OFF");
     if (!teleportReady && !state)
-        onSwitch.enabled = NO;
+	onSwitch.enabled = NO;
     if (state) {
-        NSLog(@"[GUI] set buttonOn to YES");
-        [defaults setBool:YES forKey:@"TeleporterOn"];
+	NSLog(@"[GUI] set buttonOn to YES");
+	[defaults setBool:YES forKey:@"TeleporterOn"];
     }
     else{
-        [defaults setBool:NO forKey:@"TeleporterOn"];
-        NSLog(@"[GUI] set buttonOn to NO");
+	[defaults setBool:NO forKey:@"TeleporterOn"];
+	NSLog(@"[GUI] set buttonOn to NO");
     }
 
     [defaults synchronize];
