@@ -1,7 +1,7 @@
 {
-    CFBundleExecutable = "TeleportMe";
+    CFBundleExecutable = "iTeleport";
     CFBundleIconFile = icon.png;
-    CFBundleIdentifier = "co.jalby.teleportme";
+    CFBundleIdentifier = "co.jalby.iteleport";
     CFBundleInfoDictionaryVersion = 6.0;
     CFBundlePackageType = APPL;
     CFBundleSignature = "????";
@@ -9,6 +9,7 @@
 	iPhoneOS
     );
     CFBundleVersion = 1.0;
+    NSLocationWhenInUseUsageDescription = "iTeleport is easier to use if it has your location!";
     DTPlatformName = iphoneos;
     DTSDKName = iphoneos3.0;
     LSRequiresIPhoneOS = 1;

@@ -12,6 +12,7 @@
 ///////////////////////////////////////////
 #import <CoreLocation/CLLocation.h>
 #import <CoreLocation/CLHeading.h>
+#import <CoreLocation/CLLocationManager.h>
 #import <Cephei/HBPreferences.h>
 #include <stdlib.h>
 
@@ -32,8 +33,11 @@ static NSString *const kHBCBPreferencesAltitudeKey = @"Altitude";
 static NSString *const kHBCBPreferencesUpdatedKey = @"CoordinatesUpdated";
 
 HBPreferences *preferences;
+CLLocation*current;
+CLLocationManager *manager;
 
 %ctor {
+    NSLog(@"[TWEAK] Tweak constructor called!");
     deltaX = deltaY = deltaZ = targetX = targetY = targetZ = 0;
 
     preferences = [[HBPreferences alloc] initWithIdentifier:kHBCBPreferencesDomain];
@@ -51,6 +55,11 @@ HBPreferences *preferences;
     [preferences registerDouble:&targetX default:0 forKey:kHBCBPreferencesLatitudeKey];
     [preferences registerDouble:&targetY default:0 forKey:kHBCBPreferencesLongitudeKey];
     [preferences registerDouble:&targetZ default:0 forKey:kHBCBPreferencesAltitudeKey];
+
+    current = [[CLLocation alloc] init];
+    manager = [[CLLocationManager alloc] init];
+    NSLog(@"[TWEAK] Init Location is: %f, %f", [current coordinate].latitude, [current coordinate].longitude);
+
 }
 
 @interface CLLocation() 

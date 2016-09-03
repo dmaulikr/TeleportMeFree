@@ -52,9 +52,19 @@
 	NSLog(@"[GUI]WARNING: NSDefaults incorrectly set.");
 
     NSString *cepheiRefresh = @"co.jalby.iteleport/ReloadPrefs";
+   // NSString *authMessage = @"Allow iTeleport location? Not required, but makes things easier.";
     [defaults setObject:cepheiRefresh forKey:@"PostNotification"];
     [defaults setObject:@NO forKey:@"CoordinatesUpdated"];
     [defaults synchronize];
+
+   // [[NSBundle mainBundle] setObject:authMessage forKey:@"NSLocationWhenInUseUsageDescription"];
+   // [[NSBundle mainBundle] synchronize];
+
+    self.locationManager = [[CLLocationManager alloc] init];
+    [self.locationManager setDelegate:self];
+    [self.locationManager startUpdatingLocation];
+    [self.locationManager requestWhenInUseAuthorization];
+    //TODO: Lead user to prefs to enable
 }
 
 #pragma mark - UITableViewDataSource
@@ -89,26 +99,23 @@
 	    switch ([indexPath row]) {
 		case 0:
 		    playerTextField.placeholder = @"±90";
-		    playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
-		    playerTextField.returnKeyType = UIReturnKeyNext;
-	    playerTextField.tag = LATITUDE;
+	        playerTextField.tag = LATITUDE;
 		    break;
 		case 1:
 		    playerTextField.placeholder = @"±180";
-		    playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
-		    playerTextField.returnKeyType = UIReturnKeyNext;
-	    playerTextField.tag = LONGITUDE;
+	        playerTextField.tag = LONGITUDE;
 		    break;
 		case 2:
 		    playerTextField.placeholder = @"To the moon";
-		    playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
-	    playerTextField.tag = ALTITUDE;
+	        playerTextField.tag = ALTITUDE;
 		    break;
 		case 3:
 		    playerTextField.placeholder = @"ERROR";
 		    break;
 	    }
 	    
+        playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
+        playerTextField.returnKeyType = UIReturnKeyNext;
 	    playerTextField.backgroundColor = [UIColor whiteColor];
 	    playerTextField.autocorrectionType = UITextAutocorrectionTypeNo; // no auto correction support
 	    playerTextField.autocapitalizationType = UITextAutocapitalizationTypeNone; // no auto capitalization support
@@ -118,7 +125,26 @@
 	    [playerTextField setEnabled: YES];
 	    [cell.contentView addSubview:playerTextField];
 	    playerTextField.delegate = self;
-	[playerTextField addTarget:self action:@selector(checkTextField:) forControlEvents:UIControlEventEditingChanged];
+	    [playerTextField addTarget:self action:@selector(checkTextField:) forControlEvents:UIControlEventEditingChanged];
+        
+        NSNumber* coordinateReplace = nil;
+        if ([defaults boolForKey:@"TeleporterOn"]) {
+            switch (playerTextField.tag) {
+                case LATITUDE:
+                    coordinateReplace = [NSNumber numberWithDouble:[defaults doubleForKey:@"Latitude"]];
+                    break;
+                case LONGITUDE:
+                    coordinateReplace = [NSNumber numberWithDouble:[defaults doubleForKey:@"Longitude"]];
+                    break;
+                case ALTITUDE:
+                    coordinateReplace = [NSNumber numberWithDouble:[defaults doubleForKey:@"Altitude"]];
+                    break;
+                default:
+                    break;
+            }
+            playerTextField.text = [coordinateReplace stringValue];
+        }
+
 	    [playerTextField release];
     }
     
@@ -126,8 +152,8 @@
 	       onSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(120, 10, 185, 30)];
 	       [onSwitch setOnTintColor:[UIColor redColor]];
 	   [onSwitch addTarget:self action:@selector(setState:) forControlEvents:UIControlEventValueChanged];
-	   onSwitch.enabled = NO;
-	   [onSwitch setOn:NO];
+	   [defaults boolForKey:@"TeleporterOn"] ? onSwitch.enabled = YES : onSwitch.enabled = NO;
+       [onSwitch setOn:[defaults boolForKey:@"TeleporterOn"]];
 	
 	    if ([indexPath row] == 0) {
 	       cell.textLabel.text = @"Teleport!";
@@ -234,7 +260,8 @@ return cell;
 
     [defaults setBool:YES forKey:@"CoordinatesUpdated"];
     [defaults synchronize];
-    NSLog(@"Dictionary is: %@", [defaults dictionaryRepresentation]);
+    //NSLog(@"Dictionary is: %@", [defaults dictionaryRepresentation]);
+    
     //clear error image if we made it out alive
     textField.rightViewMode = UITextFieldViewModeNever;
     textField.rightView = nil;
