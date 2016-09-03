@@ -1,4 +1,6 @@
 #import <CoreLocation/CoreLocation.h>
+#import <MapKit/MapKit.h>
+#import <MapKit/MKAnnotation.h>
 
 typedef enum {
     LATITUDE,
@@ -6,7 +8,7 @@ typedef enum {
     ALTITUDE
 } COORDINATE_TYPE;
 
-@interface RootViewController: UIViewController<UITableViewDelegate, UITableViewDataSource, UITextFieldDelegate, CLLocationManagerDelegate> {
+@interface RootViewController: UIViewController<UITableViewDelegate, UITableViewDataSource, UITextFieldDelegate, CLLocationManagerDelegate, MKMapViewDelegate> {
     UILabel*helloLabel;
     UITableView*tableView;
     UISwitch*onSwitch;
@@ -20,6 +22,8 @@ typedef enum {
 @property (readonly, nonatomic) double latitude;
 @property (readonly, nonatomic) double longitude;
 @property (readonly, nonatomic) double altitude;
+
+@property(nonatomic, retain) MKMapView *mapView;
 
 @property (nonatomic, assign) CLLocationManager *locationManager;
 

@@ -13,6 +13,9 @@
     @synthesize longitude;
     @synthesize altitude;
 
+    @synthesize mapView;
+    @synthesize locationManager;
+
 - (void)resetDefaults
  {
     NSUserDefaults * defs = [NSUserDefaults standardUserDefaults];
@@ -60,11 +63,23 @@
    // [[NSBundle mainBundle] setObject:authMessage forKey:@"NSLocationWhenInUseUsageDescription"];
    // [[NSBundle mainBundle] synchronize];
 
+
+    mapView = [[MKMapView alloc] initWithFrame:self.view.frame];
+    mapView.delegate = self;
+
     self.locationManager = [[CLLocationManager alloc] init];
     [self.locationManager setDelegate:self];
     [self.locationManager startUpdatingLocation];
     [self.locationManager requestWhenInUseAuthorization];
-    //TODO: Lead user to prefs to enable
+        //TODO: Lead user to prefs to enable
+
+     mapView.showsUserLocation = YES;
+    [mapView setMapType:MKMapTypeStandard];
+    [mapView setZoomEnabled:YES];
+    [mapView setScrollEnabled:YES];
+
+    [self.view addSubview:mapView];
+
 }
 
 #pragma mark - UITableViewDataSource
