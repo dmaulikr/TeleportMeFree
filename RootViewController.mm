@@ -2,6 +2,7 @@
 @implementation RootViewController {
      NSUserDefaults *defaults;
      NSTimer *_updateUITimer;
+
     
 }
 
@@ -74,6 +75,7 @@
     [self.locationManager requestWhenInUseAuthorization];
         //TODO: Lead user to prefs to enable
 
+    //---Add map----
      mapView.showsUserLocation = YES;
     [mapView setMapType:MKMapTypeStandard];
     [mapView setZoomEnabled:YES];
@@ -81,6 +83,22 @@
 
     [self.view addSubview:mapView];
 
+    //--Add center image icon----
+    UIImageView *centerPin = [[UIImageView alloc] initWithFrame:CGRectMake(0,0,50,50)];
+    [centerPin setFrame:({
+    CGRect frame = centerPin.frame;
+
+    frame.origin.x = (self.view.frame.size.width - frame.size.width) / 2.0;
+    frame.origin.y = (self.view.frame.size.height - frame.size.height) / 2.0;
+
+    CGRectIntegral(frame);
+})];
+    centerPin.image = [UIImage imageNamed:@"icon.png"];
+    [self.view addSubview:centerPin];
+    [centerPin release];
+
+
+    //---Add update center coordinates (change later)---
     _updateUITimer = [NSTimer timerWithTimeInterval:0.1 
                                              target:self 
                                            selector:@selector(updateUI) 
@@ -88,8 +106,6 @@
                                             repeats:YES];
 
     [[NSRunLoop mainRunLoop] addTimer:_updateUITimer forMode:NSRunLoopCommonModes];
-
-
 }
 
 - (void)updateUI {
