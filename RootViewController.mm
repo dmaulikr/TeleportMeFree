@@ -1,6 +1,7 @@
 #import "RootViewController.h"
 @implementation RootViewController {
      NSUserDefaults *defaults;
+     NSTimer *_updateUITimer;
     
 }
 
@@ -80,6 +81,19 @@
 
     [self.view addSubview:mapView];
 
+    _updateUITimer = [NSTimer timerWithTimeInterval:0.1 
+                                             target:self 
+                                           selector:@selector(updateUI) 
+                                           userInfo:nil 
+                                            repeats:YES];
+
+    [[NSRunLoop mainRunLoop] addTimer:_updateUITimer forMode:NSRunLoopCommonModes];
+
+
+}
+
+- (void)updateUI {
+    NSLog(@"[GUI]Map coordinates: %f, %f", mapView.centerCoordinate.latitude, mapView.centerCoordinate.longitude);
 }
 
 #pragma mark - UITableViewDataSource
