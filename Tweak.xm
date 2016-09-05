@@ -33,8 +33,6 @@ static NSString *const kHBCBPreferencesAltitudeKey = @"Altitude";
 static NSString *const kHBCBPreferencesUpdatedKey = @"CoordinatesUpdated";
 
 HBPreferences *preferences;
-CLLocation*current;
-CLLocationManager *manager;
 
 %ctor {
     NSLog(@"[TWEAK] Tweak constructor called!");
@@ -56,10 +54,6 @@ CLLocationManager *manager;
     [preferences registerDouble:&targetY default:0 forKey:kHBCBPreferencesLongitudeKey];
     [preferences registerDouble:&targetZ default:0 forKey:kHBCBPreferencesAltitudeKey];
 
-    current = [[CLLocation alloc] init];
-    manager = [[CLLocationManager alloc] init];
-    NSLog(@"[TWEAK] Init Location is: %f, %f", [current coordinate].latitude, [current coordinate].longitude);
-
 }
 
 @interface CLLocation() 
@@ -70,12 +64,13 @@ CLLocationManager *manager;
 %hook CLLocation
      %new 
     - (NSInteger)currentSecond {
+
         NSDate *today = [NSDate date];
-        NSCalendar *gregorian = [[[NSCalendar alloc]
-             initWithCalendarIdentifier:NSGregorianCalendar] autorelease];
+        NSCalendar *gregorian = [[NSCalendar alloc] initWithCalendarIdentifier:NSGregorianCalendar];
         NSDateComponents *components =
             [gregorian components:(NSHourCalendarUnit | NSMinuteCalendarUnit | NSSecondCalendarUnit) fromDate:today];
 
+        [gregorian release];
         return [components second];
     }
 
@@ -91,42 +86,43 @@ CLLocationManager *manager;
       }
 
     - (CLLocationCoordinate2D)coordinate {
-        if (enabled) {NSLog(@"buttonOn");}
-        else
-            NSLog(@"buttonOff");
         NSLog(@"[TWEAK] Coordinates from prefs (variables): %f, %f, %f", targetX, targetY, targetZ);
         NSLog(@"[TWEAK] Coordinates from prefs (RAW): %f, %f, %f", [preferences doubleForKey:kHBCBPreferencesLatitudeKey], [preferences doubleForKey:kHBCBPreferencesLongitudeKey], [preferences doubleForKey:kHBCBPreferencesAltitudeKey]);
-        if (![preferences boolForKey:kHBCBPreferencesEnabledKey]) {
+        
+        if (!enabled) {
             NSLog(@"[TWEAK] Tweak detected BUTTON OFF.");
             return %orig;
         }
 
          CLLocationCoordinate2D newCoords = %orig;
 
-         if ([preferences boolForKey:kHBCBPreferencesUpdatedKey] || !startedOnce) {
+         if (updated || !startedOnce) {
             NSLog(@"[TWEAK] Tweak detected new coordinates. Updating deltas...");
-            deltaX = [preferences doubleForKey:kHBCBPreferencesLatitudeKey] - newCoords.latitude;
-            deltaY = [preferences doubleForKey:kHBCBPreferencesLongitudeKey] - newCoords.longitude;
+            deltaX = targetX - newCoords.latitude;
+            deltaY = targetY - newCoords.longitude;
             [preferences setBool:NO forKey:kHBCBPreferencesUpdatedKey];
-            startedOnce = true;
+            startedOnce = YES;
         }
         else
             NSLog(@"[TWEAK] Tweak didn't detect coordinates need updating.");
 
         NSLog(@"[TWEAK] Tweak deltas are: %f, %f", deltaX, deltaY);
+
         newCoords.latitude += deltaX;
         newCoords.longitude += deltaY;
-        NSLog(@"here are current coordinates:%f and %f", newCoords.latitude, newCoords.longitude);
+
+        NSLog(@"[TWEAK] here are current coordinates:%f and %f", newCoords.latitude, newCoords.longitude);
+
         return newCoords;
     }
     
     - (CLLocationDistance)altitude {
-        if (![preferences boolForKey:kHBCBPreferencesEnabledKey])
+        if (!enabled)
             return %orig;
 
         NSInteger current = [self currentSecond];
         if (current  % 12 == 0) {
-            //deltaZ = controller.targetZ - %orig;
+            deltaZ = targetZ - %orig;
         }
         CLLocationDistance modAlt = %orig + deltaZ;
 
@@ -134,6 +130,7 @@ CLLocationManager *manager;
             modAlt = targetZ + [self fuzzy];
         if (modAlt < 0)
             modAlt = modAlt * -1;
+
         return modAlt;
     }
     
