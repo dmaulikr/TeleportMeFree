@@ -30,12 +30,16 @@
 
 - (void)loadView {
 	self.view = [[[UIView alloc] initWithFrame:[[UIScreen mainScreen] applicationFrame]] autorelease];
+
+    CGFloat screenWidth = self.view.frame.size.width;
+    CGFloat screenHeight = self.view.frame.size.height;
+
 	self.view.backgroundColor = [UIColor whiteColor];
 	helloLabel = [[UILabel alloc] initWithFrame:CGRectMake(21,0,self.view.frame.size.width,44)];
 	helloLabel.text = @"Latitude";
 	helloLabel.backgroundColor = [UIColor clearColor];
 	helloLabel.textAlignment = UITextAlignmentLeft;
-	[self.view addSubview:helloLabel];
+	//[self.view addSubview:helloLabel];
 
     // init table view
     tableView = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStylePlain];
@@ -73,7 +77,7 @@
     [self.locationManager setDelegate:self];
     [self.locationManager startUpdatingLocation];
     [self.locationManager requestWhenInUseAuthorization];
-        //TODO: Lead user to prefs to enable
+	//TODO: Lead user to prefs to enable
 
     //---Add map----
      mapView.showsUserLocation = YES;
@@ -82,30 +86,43 @@
     [mapView setScrollEnabled:YES];
 
     [self.view addSubview:mapView];
+       [mapView release];
 
     //--Add center image icon----
     UIImageView *centerPin = [[UIImageView alloc] initWithFrame:CGRectMake(0,0,50,50)];
-    [centerPin setFrame:({
-    CGRect frame = centerPin.frame;
-
-    frame.origin.x = (self.view.frame.size.width - frame.size.width) / 2.0;
-    frame.origin.y = (self.view.frame.size.height - frame.size.height) / 2.0;
-
-    CGRectIntegral(frame);
-})];
     centerPin.image = [UIImage imageNamed:@"icon.png"];
+    centerPin.center = self.view.center;
     [self.view addSubview:centerPin];
     [centerPin release];
 
 
     //---Add update center coordinates (change later)---
     _updateUITimer = [NSTimer timerWithTimeInterval:0.1 
-                                             target:self 
-                                           selector:@selector(updateUI) 
-                                           userInfo:nil 
-                                            repeats:YES];
+					     target:self 
+					   selector:@selector(updateUI) 
+					   userInfo:nil 
+					    repeats:YES];
 
     [[NSRunLoop mainRunLoop] addTimer:_updateUITimer forMode:NSRunLoopCommonModes];
+
+    //---Add box for coordinates and search---
+    CGFloat boxWidth = screenWidth/3.7;
+    CGFloat boxHeight = screenHeight/4;
+    CGFloat padding = 0;
+
+    UIView *rightView=[[UIView alloc] initWithFrame:CGRectMake(screenWidth - boxWidth - padding,(screenHeight/2) - boxHeight - padding, boxWidth, boxHeight)];
+    rightView.backgroundColor = [UIColor redColor];
+    [self.view addSubview:rightView];
+    [rightView release];
+
+
+    //---Bottom toolbar-----
+    CGFloat bottomBarHeight = screenHeight/6;
+    UIView *bottomView = [[UIView alloc] initWithFrame:CGRectMake(0, screenHeight - bottomBarHeight, screenWidth, bottomBarHeight)];
+    bottomView.backgroundColor = [UIColor blueColor];
+    [self.view addSubview:bottomView];
+    [bottomView release];
+
 }
 
 - (void)updateUI {
@@ -144,23 +161,23 @@
 	    switch ([indexPath row]) {
 		case 0:
 		    playerTextField.placeholder = @"±90";
-	        playerTextField.tag = LATITUDE;
+		playerTextField.tag = LATITUDE;
 		    break;
 		case 1:
 		    playerTextField.placeholder = @"±180";
-	        playerTextField.tag = LONGITUDE;
+		playerTextField.tag = LONGITUDE;
 		    break;
 		case 2:
 		    playerTextField.placeholder = @"To the moon";
-	        playerTextField.tag = ALTITUDE;
+		playerTextField.tag = ALTITUDE;
 		    break;
 		case 3:
 		    playerTextField.placeholder = @"ERROR";
 		    break;
 	    }
 	    
-        playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
-        playerTextField.returnKeyType = UIReturnKeyNext;
+	playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
+	playerTextField.returnKeyType = UIReturnKeyNext;
 	    playerTextField.backgroundColor = [UIColor whiteColor];
 	    playerTextField.autocorrectionType = UITextAutocorrectionTypeNo; // no auto correction support
 	    playerTextField.autocapitalizationType = UITextAutocapitalizationTypeNone; // no auto capitalization support
@@ -171,24 +188,24 @@
 	    [cell.contentView addSubview:playerTextField];
 	    playerTextField.delegate = self;
 	    [playerTextField addTarget:self action:@selector(checkTextField:) forControlEvents:UIControlEventEditingChanged];
-        
-        NSNumber* coordinateReplace = nil;
-        if ([defaults boolForKey:@"TeleporterOn"]) {
-            switch (playerTextField.tag) {
-                case LATITUDE:
-                    coordinateReplace = [NSNumber numberWithDouble:[defaults doubleForKey:@"Latitude"]];
-                    break;
-                case LONGITUDE:
-                    coordinateReplace = [NSNumber numberWithDouble:[defaults doubleForKey:@"Longitude"]];
-                    break;
-                case ALTITUDE:
-                    coordinateReplace = [NSNumber numberWithDouble:[defaults doubleForKey:@"Altitude"]];
-                    break;
-                default:
-                    break;
-            }
-            playerTextField.text = [coordinateReplace stringValue];
-        }
+	
+	NSNumber* coordinateReplace = nil;
+	if ([defaults boolForKey:@"TeleporterOn"]) {
+	    switch (playerTextField.tag) {
+		case LATITUDE:
+		    coordinateReplace = [NSNumber numberWithDouble:[defaults doubleForKey:@"Latitude"]];
+		    break;
+		case LONGITUDE:
+		    coordinateReplace = [NSNumber numberWithDouble:[defaults doubleForKey:@"Longitude"]];
+		    break;
+		case ALTITUDE:
+		    coordinateReplace = [NSNumber numberWithDouble:[defaults doubleForKey:@"Altitude"]];
+		    break;
+		default:
+		    break;
+	    }
+	    playerTextField.text = [coordinateReplace stringValue];
+	}
 
 	    [playerTextField release];
     }
@@ -392,11 +409,6 @@ return cell;
     }
 
     [defaults synchronize];
-    /*
-    if (validLatitude){NSLog(@"Latitude Valid");}
-    if (validLongitude){NSLog(@"Longitude Valid");}
-    if (validAltitude){NSLog(@"Altitude valid");}
-    if (transportReady){NSLog(@"Transport ready");}*/
 }
 
 
