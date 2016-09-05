@@ -9,7 +9,6 @@ typedef enum {
 } COORDINATE_TYPE;
 
 @interface RootViewController: UIViewController<UITableViewDelegate, UITableViewDataSource, UITextFieldDelegate, CLLocationManagerDelegate, MKMapViewDelegate> {
-    UILabel*helloLabel;
     UITableView*tableView;
     UISwitch*onSwitch;
 }

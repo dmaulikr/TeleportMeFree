@@ -1,9 +1,22 @@
 #import "RootViewController.h"
+#import <QuartzCore/QuartzCore.h>
+
 @implementation RootViewController {
      NSUserDefaults *defaults;
      NSTimer *_updateUITimer;
 
-    
+     CGFloat screenWidth;
+     CGFloat screenHeight;
+
+     CGFloat toolbarHeight;
+     CGFloat sidebarWidth;
+     CGFloat sidebarHeight;
+
+     UITextField *latitudeText;
+     UITextField *longitudeText;
+     //UITextField *altitudeText;
+
+     BOOL mapZoom;
 }
 
     @synthesize validLatitude;
@@ -31,44 +44,22 @@
 - (void)loadView {
 	self.view = [[[UIView alloc] initWithFrame:[[UIScreen mainScreen] applicationFrame]] autorelease];
 
-    CGFloat screenWidth = self.view.frame.size.width;
-    CGFloat screenHeight = self.view.frame.size.height;
+    screenWidth = self.view.frame.size.width;
+    screenHeight = self.view.frame.size.height;
 
 	self.view.backgroundColor = [UIColor whiteColor];
-	helloLabel = [[UILabel alloc] initWithFrame:CGRectMake(21,0,self.view.frame.size.width,44)];
-	helloLabel.text = @"Latitude";
-	helloLabel.backgroundColor = [UIColor clearColor];
-	helloLabel.textAlignment = UITextAlignmentLeft;
-	//[self.view addSubview:helloLabel];
-
-    // init table view
-    tableView = [[UITableView alloc] initWithFrame:self.view.bounds style:UITableViewStylePlain];
-
-    // must set delegate & dataSource, otherwise the the table will be empty and not responsive
-    tableView.delegate = self;
-    tableView.dataSource = self;
-
-    tableView.backgroundColor = [UIColor purpleColor];
-
-    // add to canvas
-    [self.view addSubview:tableView];
 
     validLatitude = validLongitude = validAltitude =  teleportReady = NO;
     latitude = longitude = altitude = 0;
 
     defaults = [NSUserDefaults standardUserDefaults];
     if (defaults == nil)
-	NSLog(@"[GUI]WARNING: NSDefaults incorrectly set.");
+	   NSLog(@"[GUI]WARNING: NSDefaults incorrectly set.");
 
     NSString *cepheiRefresh = @"co.jalby.iteleport/ReloadPrefs";
-   // NSString *authMessage = @"Allow iTeleport location? Not required, but makes things easier.";
     [defaults setObject:cepheiRefresh forKey:@"PostNotification"];
     [defaults setObject:@NO forKey:@"CoordinatesUpdated"];
     [defaults synchronize];
-
-   // [[NSBundle mainBundle] setObject:authMessage forKey:@"NSLocationWhenInUseUsageDescription"];
-   // [[NSBundle mainBundle] synchronize];
-
 
     mapView = [[MKMapView alloc] initWithFrame:self.view.frame];
     mapView.delegate = self;
@@ -84,9 +75,11 @@
     [mapView setMapType:MKMapTypeStandard];
     [mapView setZoomEnabled:YES];
     [mapView setScrollEnabled:YES];
+    //[mapView setCenterCoordinate:mapView.userLocation.location.coordinate animated:YES];
 
+    mapZoom = NO;
     [self.view addSubview:mapView];
-       [mapView release];
+    [mapView release];
 
     //--Add center image icon----
     UIImageView *centerPin = [[UIImageView alloc] initWithFrame:CGRectMake(0,0,50,50)];
@@ -97,7 +90,7 @@
 
 
     //---Add update center coordinates (change later)---
-    _updateUITimer = [NSTimer timerWithTimeInterval:0.1 
+    _updateUITimer = [NSTimer timerWithTimeInterval:0.4 
 					     target:self 
 					   selector:@selector(updateUI) 
 					   userInfo:nil 
@@ -106,40 +99,84 @@
     [[NSRunLoop mainRunLoop] addTimer:_updateUITimer forMode:NSRunLoopCommonModes];
 
     //---Add box for coordinates and search---
-    CGFloat boxWidth = screenWidth/3.7;
-    CGFloat boxHeight = screenHeight/4;
-    CGFloat padding = 0;
+    sidebarWidth = screenWidth/3.7;
+    sidebarHeight = screenHeight/4;
 
-    UIView *rightView=[[UIView alloc] initWithFrame:CGRectMake(screenWidth - boxWidth - padding,(screenHeight/2) - boxHeight - padding, boxWidth, boxHeight)];
-    rightView.backgroundColor = [UIColor redColor];
-    [self.view addSubview:rightView];
-    [rightView release];
+    tableView = [[UITableView alloc] initWithFrame:CGRectMake(screenWidth - sidebarWidth,(screenHeight/2) - sidebarHeight, sidebarWidth, sidebarHeight) style:UITableViewStylePlain];
 
+    // must set delegate & dataSource, otherwise the the table will be empty and not responsive
+    tableView.delegate = self;
+    tableView.dataSource = self;
+
+    tableView.backgroundColor = [UIColor purpleColor];
+    tableView.layer.cornerRadius = 5;
+    tableView.layer.masksToBounds = YES;
+    UITapGestureRecognizer *gestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(hideKeyboard)];
+    [tableView addGestureRecognizer:gestureRecognizer];
+    [self.view addSubview:tableView];
+    [gestureRecognizer release];
 
     //---Bottom toolbar-----
-    CGFloat bottomBarHeight = screenHeight/6;
-    UIView *bottomView = [[UIView alloc] initWithFrame:CGRectMake(0, screenHeight - bottomBarHeight, screenWidth, bottomBarHeight)];
+    toolbarHeight = screenHeight/6;
+    UIView *bottomView = [[UIView alloc] initWithFrame:CGRectMake(0, screenHeight - toolbarHeight, screenWidth, toolbarHeight)];
     bottomView.backgroundColor = [UIColor blueColor];
-    [self.view addSubview:bottomView];
-    [bottomView release];
 
+    onSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(screenWidth/2,screenHeight - toolbarHeight,sidebarWidth,toolbarHeight)];
+    [onSwitch setOnTintColor:[UIColor redColor]];
+    [onSwitch addTarget:self action:@selector(setState:) forControlEvents:UIControlEventValueChanged];
+    onSwitch.enabled = YES;
+    [onSwitch setOn:[defaults boolForKey:@"TeleporterOn"]];
+    
+    [self.view addSubview:bottomView];
+    [self.view addSubview:onSwitch];
+    [bottomView release];
+    [onSwitch release];
+
+
+}
+
+- (void)hideKeyboard
+{
+    [tableView endEditing:YES];
 }
 
 - (void)updateUI {
     NSLog(@"[GUI]Map coordinates: %f, %f", mapView.centerCoordinate.latitude, mapView.centerCoordinate.longitude);
+    latitudeText.text = [NSString stringWithFormat:@"%.8f", mapView.centerCoordinate.latitude];
+    longitudeText.text = [NSString stringWithFormat:@"%.8f", mapView.centerCoordinate.longitude];
 }
+
+-(void)mapView:(MKMapView *)theMapView didUpdateUserLocation:(MKUserLocation *)userLocation 
+{
+    if (mapZoom)
+        return;
+
+    MKCoordinateRegion mapRegion;   
+    mapRegion.center = theMapView.userLocation.coordinate;
+    mapRegion.span.latitudeDelta = 0.2;
+    mapRegion.span.longitudeDelta = 0.2;
+
+    [theMapView setRegion:mapRegion animated: YES];
+    mapZoom = YES;
+}
+
 
 #pragma mark - UITableViewDataSource
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)theTableView
 {
-    return 2;
+    return 1;
 }
 
 - (NSInteger)tableView:(UITableView *)theTableView numberOfRowsInSection:(NSInteger)section
 {
     if (section == 0)
 	   return 3;
-    else return 1;
+    else return 0;
+}
+
+- (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    return sidebarHeight/4;
 }
 
 //thank you google.com and stackoverflow, couldn't have done it without u
@@ -149,101 +186,80 @@
     UITableViewCell *cell = (UITableViewCell*) [theTableView dequeueReusableCellWithIdentifier:kCellIdentifier];
     
     if (cell == nil) {
-	cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault
-				   reuseIdentifier:kCellIdentifier] autorelease];
-	cell.accessoryType = UITableViewCellAccessoryNone;
-    cell.selectionStyle = UITableViewCellSelectionStyleNone;
+	   cell = [[[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault
+				    reuseIdentifier:kCellIdentifier] autorelease];
+	   cell.accessoryType = UITableViewCellAccessoryNone;
+        cell.selectionStyle = UITableViewCellSelectionStyleNone;
 
-	if ([indexPath section] == 0) { //Section for number inputs
-	    UITextField *playerTextField = [[UITextField alloc] initWithFrame:CGRectMake(110, 10, 185, 30)];
-	    playerTextField.adjustsFontSizeToFitWidth = YES;
-	    playerTextField.textColor = [UIColor blackColor];
-	    switch ([indexPath row]) {
-		case 0:
-		    playerTextField.placeholder = @"±90";
-		playerTextField.tag = LATITUDE;
-		    break;
-		case 1:
-		    playerTextField.placeholder = @"±180";
-		playerTextField.tag = LONGITUDE;
-		    break;
-		case 2:
-		    playerTextField.placeholder = @"To the moon";
-		playerTextField.tag = ALTITUDE;
-		    break;
-		case 3:
-		    playerTextField.placeholder = @"ERROR";
-		    break;
-	    }
+        if ([indexPath section] == 0) { //Section for number inputs
+            UITextField *playerTextField = [[UITextField alloc] initWithFrame:CGRectMake(0, 0, sidebarWidth, sidebarHeight/4)];
+            playerTextField.adjustsFontSizeToFitWidth = YES;
+            playerTextField.textColor = [UIColor blackColor];
+
+            switch ([indexPath row]) {
+                case 0:
+                    playerTextField.placeholder = @"±90";
+                    playerTextField.tag = LATITUDE;
+                    latitudeText = playerTextField;
+                    break;
+
+                case 1:
+                    playerTextField.placeholder = @"±180";
+                    playerTextField.tag = LONGITUDE;
+                    longitudeText = playerTextField;
+                    break;
+
+                case 2:
+                    playerTextField.placeholder = @"To the moon";
+                    playerTextField.tag = ALTITUDE;
+                    break;
+
+                case 3:
+                    playerTextField.placeholder = @"ERROR";
+                    break;
+
+                default:
+                    break;
+
+            }
 	    
-	playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
-	playerTextField.returnKeyType = UIReturnKeyNext;
-	    playerTextField.backgroundColor = [UIColor whiteColor];
-	    playerTextField.autocorrectionType = UITextAutocorrectionTypeNo; // no auto correction support
-	    playerTextField.autocapitalizationType = UITextAutocapitalizationTypeNone; // no auto capitalization support
-	    playerTextField.textAlignment = UITextAlignmentLeft;
+            playerTextField.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
+            playerTextField.returnKeyType = UIReturnKeyNext;
+	        playerTextField.backgroundColor = [UIColor whiteColor];
+	        playerTextField.autocorrectionType = UITextAutocorrectionTypeNo; // no auto correction support
+	        playerTextField.autocapitalizationType = UITextAutocapitalizationTypeNone; // no auto capitalization support
+	        playerTextField.textAlignment = UITextAlignmentLeft;
 
-	    playerTextField.clearButtonMode = UITextFieldViewModeNever; // no clear 'x' button to the right
-	    [playerTextField setEnabled: YES];
-	    [cell.contentView addSubview:playerTextField];
-	    playerTextField.delegate = self;
-	    [playerTextField addTarget:self action:@selector(checkTextField:) forControlEvents:UIControlEventEditingChanged];
-	
-	NSNumber* coordinateReplace = nil;
-	if ([defaults boolForKey:@"TeleporterOn"]) {
-	    switch (playerTextField.tag) {
-		case LATITUDE:
-		    coordinateReplace = [NSNumber numberWithDouble:[defaults doubleForKey:@"Latitude"]];
-		    break;
-		case LONGITUDE:
-		    coordinateReplace = [NSNumber numberWithDouble:[defaults doubleForKey:@"Longitude"]];
-		    break;
-		case ALTITUDE:
-		    coordinateReplace = [NSNumber numberWithDouble:[defaults doubleForKey:@"Altitude"]];
-		    break;
-		default:
-		    break;
-	    }
-	    playerTextField.text = [coordinateReplace stringValue];
-	}
+	        playerTextField.clearButtonMode = UITextFieldViewModeNever; // no clear 'x' button to the right
+	        [playerTextField setEnabled: YES];
+	        [cell.contentView addSubview:playerTextField];
+	        playerTextField.delegate = self;
+	        [playerTextField addTarget:self action:@selector(checkTextField:) forControlEvents:UIControlEventEditingChanged];
 
-	    [playerTextField release];
-    }
+            NSString* coordinateString = nil;
+
+            switch (playerTextField.tag) {
+                case LATITUDE:
+                    coordinateString = [NSString stringWithFormat:@"%.8f", mapView.userLocation.location.coordinate.latitude];
+                    break;
+		    
+                case LONGITUDE:
+		            coordinateString = [NSString stringWithFormat:@"%.8f", mapView.userLocation.location.coordinate.longitude];
+                    break;
+		    
+                case ALTITUDE:
+		            coordinateString = [NSString stringWithFormat:@"%.6f", [defaults doubleForKey:@"Altitude"]];
+		            break;
+		    
+                default:
+		            break;
+	       }
+	       
+           playerTextField.text = coordinateString;
+
+	       [playerTextField release];
+        }
     
-	else { //Section for boolean inputs (UISwitches)
-	       onSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(120, 10, 185, 30)];
-	       [onSwitch setOnTintColor:[UIColor redColor]];
-	   [onSwitch addTarget:self action:@selector(setState:) forControlEvents:UIControlEventValueChanged];
-	   [defaults boolForKey:@"TeleporterOn"] ? onSwitch.enabled = YES : onSwitch.enabled = NO;
-       [onSwitch setOn:[defaults boolForKey:@"TeleporterOn"]];
-	
-	    if ([indexPath row] == 0) {
-	       cell.textLabel.text = @"Teleport!";
-	    }
-	    else {
-	       cell.textLabel.text = @"ERROR!!";
-	    }
-
-	[cell.contentView addSubview:onSwitch];
-	[onSwitch release];
-	}
-    }
-
-    if ([indexPath section] == 0) { // Latitude and Longitude
-	switch ([indexPath row]) {
-	    case 0: 
-	       cell.textLabel.text = @"Latitude"; 
-	       break;
-	    case 1: 
-	       cell.textLabel.text = @"Longitude"; 
-	       break;
-	   case 2: 
-	       cell.textLabel.text = @"Altitude"; 
-	       break;
-	   default:
-	       cell.textLabel.text = @"ERROR";
-	       break;
-	}
     }
 
 return cell;	
@@ -262,7 +278,7 @@ return cell;
     teleportReady = NO;
 
     if (!onSwitch.isOn)
-	onSwitch.enabled = NO;
+	   onSwitch.enabled = NO;
 
     //check for a valid number
     NSString *expression = @"^(-)?([0-9]{1,5})?([,\\.]([0-9]{1,8})?)?$";
@@ -276,12 +292,6 @@ return cell;
     NSString *fixedCheck = [checkString stringByReplacingOccurrencesOfString:@"," withString:@"."];
     double checkValue = [fixedCheck doubleValue];
 
-    //default to error state
-    textField.rightViewMode = UITextFieldViewModeAlways;
-    UIImageView* imageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 12, 32, 32)];
-    imageView.image = [UIImage imageNamed:@"error.png"];
-    imageView.contentMode = UIViewContentModeScaleAspectFit;
-    textField.rightView = imageView;
 
     NSLog(@"Editing textField with tag: %ld", (long)textField.tag);
     switch (textField.tag) {
@@ -323,15 +333,11 @@ return cell;
     [defaults setBool:YES forKey:@"CoordinatesUpdated"];
     [defaults synchronize];
     //NSLog(@"Dictionary is: %@", [defaults dictionaryRepresentation]);
-    
-    //clear error image if we made it out alive
-    textField.rightViewMode = UITextFieldViewModeNever;
-    textField.rightView = nil;
 
     if (validLatitude && validLongitude && validAltitude) {
-	teleportReady = onSwitch.enabled = YES;
-	[defaults synchronize];
-	return;
+       teleportReady = onSwitch.enabled = YES;
+	   [defaults synchronize];
+	   return;
     }
 
     teleportReady = NO;
