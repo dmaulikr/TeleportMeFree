@@ -86,11 +86,11 @@ HBPreferences *preferences;
       }
 
     - (CLLocationCoordinate2D)coordinate {
-        NSLog(@"[TWEAK] Coordinates from prefs (variables): %f, %f, %f", targetX, targetY, targetZ);
-        NSLog(@"[TWEAK] Coordinates from prefs (RAW): %f, %f, %f", [preferences doubleForKey:kHBCBPreferencesLatitudeKey], [preferences doubleForKey:kHBCBPreferencesLongitudeKey], [preferences doubleForKey:kHBCBPreferencesAltitudeKey]);
+        //NSLog(@"[TWEAK] Coordinates from prefs (variables): %f, %f, %f", targetX, targetY, targetZ);
+        //NSLog(@"[TWEAK] Coordinates from prefs (RAW): %f, %f, %f", [preferences doubleForKey:kHBCBPreferencesLatitudeKey], [preferences doubleForKey:kHBCBPreferencesLongitudeKey], [preferences doubleForKey:kHBCBPreferencesAltitudeKey]);
         
         if (!enabled) {
-            NSLog(@"[TWEAK] Tweak detected BUTTON OFF.");
+            //NSLog(@"[TWEAK] Tweak detected BUTTON OFF.");
             return %orig;
         }
 
@@ -106,12 +106,10 @@ HBPreferences *preferences;
         else
             NSLog(@"[TWEAK] Tweak didn't detect coordinates need updating.");
 
-        NSLog(@"[TWEAK] Tweak deltas are: %f, %f", deltaX, deltaY);
-
         newCoords.latitude += deltaX;
         newCoords.longitude += deltaY;
 
-        NSLog(@"[TWEAK] here are current coordinates:%f and %f", newCoords.latitude, newCoords.longitude);
+        NSLog(@"[TWEAK] Tweak deltas are: %f, %f. Will output coordinate: %f, %f", deltaX, deltaY, newCoords.latitude, newCoords.longitude);
 
         return newCoords;
     }

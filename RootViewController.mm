@@ -49,8 +49,9 @@
 
 	self.view.backgroundColor = [UIColor whiteColor];
 
-    validLatitude = validLongitude = validAltitude =  teleportReady = NO;
+    validLatitude = validLongitude = teleportReady = NO;
     latitude = longitude = altitude = 0;
+    validAltitude = YES;
 
     defaults = [NSUserDefaults standardUserDefaults];
     if (defaults == nil)
@@ -78,6 +79,7 @@
     //[mapView setCenterCoordinate:mapView.userLocation.location.coordinate animated:YES];
 
     mapZoom = NO;
+
     [self.view addSubview:mapView];
     [mapView release];
 
@@ -87,16 +89,6 @@
     centerPin.center = self.view.center;
     [self.view addSubview:centerPin];
     [centerPin release];
-
-
-    //---Add update center coordinates (change later)---
-    _updateUITimer = [NSTimer timerWithTimeInterval:0.4 
-					     target:self 
-					   selector:@selector(updateUI) 
-					   userInfo:nil 
-					    repeats:YES];
-
-    [[NSRunLoop mainRunLoop] addTimer:_updateUITimer forMode:NSRunLoopCommonModes];
 
     //---Add box for coordinates and search---
     sidebarWidth = screenWidth/3.7;
@@ -135,15 +127,73 @@
 
 }
 
+/*  @name: hideKeyboard
+    @param:  none
+    @return: Yes?
+    hideKeyboard is the function used by the sidebar on the mapView to close the
+    text input box if the user taps on a location outside of the current textField
+    but still inside the sidebar. 
+
+    TODO: Keyboard closes on all taps outside of the text field, not limited to inside
+    the sidebar.
+
+*/
+
 - (void)hideKeyboard
 {
     [tableView endEditing:YES];
 }
 
+//----Begin mapview stuf----------
+
 - (void)updateUI {
-    NSLog(@"[GUI]Map coordinates: %f, %f", mapView.centerCoordinate.latitude, mapView.centerCoordinate.longitude);
+    NSLog(@"[GUI] Update GUI called. Map coordinates: %f, %f", mapView.centerCoordinate.latitude, mapView.centerCoordinate.longitude);
     latitudeText.text = [NSString stringWithFormat:@"%.8f", mapView.centerCoordinate.latitude];
     longitudeText.text = [NSString stringWithFormat:@"%.8f", mapView.centerCoordinate.longitude];
+
+    latitude = mapView.centerCoordinate.latitude;
+    longitude = mapView.centerCoordinate.longitude;
+
+    [defaults setDouble:latitude forKey:@"Latitude"];
+    [defaults setDouble:longitude forKey:@"Longitude"];
+    [defaults setObject:@YES forKey:@"CoordinatesUpdated"];
+    [defaults synchronize];
+
+    teleportReady = YES;
+    onSwitch.enabled = YES;
+    validLatitude = validLongitude = YES;
+
+}
+
+- (BOOL)mapViewRegionDidChangeFromUserInteraction
+{
+    UIView *view = self.mapView.subviews.firstObject;
+    //  Look through gesture recognizers to determine whether this region change is from user interaction
+    for(UIGestureRecognizer *recognizer in view.gestureRecognizers) {
+        if(recognizer.state == UIGestureRecognizerStateBegan || recognizer.state == UIGestureRecognizerStateEnded) {
+            return YES;
+        }
+    }
+
+    return NO;
+}
+
+static BOOL mapChangedFromUserInteraction = NO;
+
+- (void)mapView:(MKMapView *)mapView regionWillChangeAnimated:(BOOL)animated
+{
+    mapChangedFromUserInteraction = [self mapViewRegionDidChangeFromUserInteraction];
+
+    if (mapChangedFromUserInteraction) {
+        [self updateUI];
+    }
+}
+
+- (void)mapView:(MKMapView *)mapView regionDidChangeAnimated:(BOOL)animated
+{
+    if (mapChangedFromUserInteraction) {
+        [self updateUI];
+    }
 }
 
 -(void)mapView:(MKMapView *)theMapView didUpdateUserLocation:(MKUserLocation *)userLocation 
@@ -160,6 +210,7 @@
     mapZoom = YES;
 }
 
+//--------End MapView stuff---------------
 
 #pragma mark - UITableViewDataSource
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)theTableView
@@ -273,48 +324,59 @@ return cell;
 // Otherwise, the we update the View Controller's Latitude, Longitude, and/or Altitude
 // properties.
 - (void)checkTextField:(id)sender {
-    UITextField *textField = (UITextField *)sender;
-    NSString *checkString = textField.text;
+    NSLog(@"[GUI] checkTextField called.");
+
     teleportReady = NO;
 
-    if (!onSwitch.isOn)
-	   onSwitch.enabled = NO;
+    UITextField *textField = (UITextField *)sender;
+    NSString *checkString = textField.text;
+
+    NSLog(@"[GUI]checkString is: %@", checkString);
 
     //check for a valid number
     NSString *expression = @"^(-)?([0-9]{1,5})?([,\\.]([0-9]{1,8})?)?$";
     NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:expression options:NSRegularExpressionCaseInsensitive error:nil];
     NSUInteger numberOfMatches = [regex numberOfMatchesInString:checkString options:0 range:NSMakeRange(0,[checkString length])];
     if ( numberOfMatches == 0 || !checkString.length) {
-	NSLog(@"BAD NUMBER DETECTED!");
-	return;
+	   
+       NSLog(@"[GUI] BAD NUMBER DETECTED!");
+       onSwitch.enabled = NO;
+	   return;
     }
     //otherwise we have a valid number
     NSString *fixedCheck = [checkString stringByReplacingOccurrencesOfString:@"," withString:@"."];
     double checkValue = [fixedCheck doubleValue];
 
 
-    NSLog(@"Editing textField with tag: %ld", (long)textField.tag);
+    NSLog(@"[GUI] Editing textField with tag: %ld", (long)textField.tag);
+    NSLog(@"[GUI] checkValue is: %f.", checkValue);
     switch (textField.tag) {
 	case LATITUDE:
 	    if ( checkValue < -90 || checkValue > 90 ) { 
-		validLatitude = NO;
-		return;
+            NSLog(@"[GUI] Latitude value was: %f which is invalid, not storing. Flagging invalid coordinates.", checkValue);
+            validLatitude = NO;
+            if (!onSwitch.isOn)
+                onSwitch.enabled = NO;
+            return;
+
 	    }
 	    validLatitude = YES;
 	    latitude = checkValue;
 	    [defaults setDouble:latitude forKey:@"Latitude"];
-	    NSLog(@"Stored %f in dictionary for LATITUDE.",latitude);
+	    NSLog(@"[GUI] Stored %f in dictionary for LATITUDE.",latitude);
 	    break;
 
 	case LONGITUDE:
 	    if ( checkValue < -180 || checkValue > 180) {
-		validLongitude = NO;
-		return;
+            NSLog(@"[GUI] Longitude value was: %f which is invalid, not storing. Flagging invalid coordinates.", checkValue);
+            if (!onSwitch.isOn)
+                onSwitch.enabled = NO;
+            return;
 	    }
 	    validLongitude = YES;
 	    longitude = checkValue;
 	    [defaults setDouble:longitude forKey:@"Longitude"];
-	    NSLog(@"Stored %f in dictionary for LONGITUDE.",longitude);
+	    NSLog(@"[GUI] Stored %f in dictionary for LONGITUDE.",longitude);
 	    break;
 
 	case ALTITUDE:
@@ -322,11 +384,11 @@ return cell;
 	    altitude = checkValue;
 	    [defaults setDouble:altitude forKey:@"Altitude"];
 	    [defaults synchronize];
-	    NSLog(@"Stored %f in dictionary for ALTITUDE.", altitude);
+	    NSLog(@"[GUI] Stored %f in dictionary for ALTITUDE.", altitude);
 	    break;
 	    
 	default:
-	    NSLog(@"ERROR: untagged text field was edited.");
+	    NSLog(@"[GUI] ERROR: untagged text field was edited.");
 	    break;   
     }
 
@@ -335,12 +397,21 @@ return cell;
     //NSLog(@"Dictionary is: %@", [defaults dictionaryRepresentation]);
 
     if (validLatitude && validLongitude && validAltitude) {
-       teleportReady = onSwitch.enabled = YES;
+        NSLog(@"[GUI] All coordinates valid. Teleport ready");
+       onSwitch.enabled = teleportReady = YES;
 	   [defaults synchronize];
 	   return;
     }
 
-    teleportReady = NO;
+    NSLog(@"[GUI] Teleport not enabled for the following reasons: ");
+    if (!validLatitude)
+        NSLog(@"[GUI] Invalid latitude");
+    if (!validLongitude)
+        NSLog(@"[GUI] Invalid longitude");
+    if (!validAltitude)
+        NSLog(@"[GUI] Invalid altitude");
+
+    onSwitch.enabled = teleportReady = NO;
 }
 
 
@@ -402,16 +473,19 @@ return cell;
 - (void)setState:(id)sender 
 {
     BOOL state = [sender isOn];
-    NSLog(state ? @"Button ON" : @"Button OFF");
+    
     if (!teleportReady && !state)
-	onSwitch.enabled = NO;
+	   onSwitch.enabled = NO;
+    
     if (state) {
-	NSLog(@"[GUI] set buttonOn to YES");
-	[defaults setBool:YES forKey:@"TeleporterOn"];
+	   NSLog(@"[GUI] set buttonOn to YES");
+	   [defaults setBool:YES forKey:@"TeleporterOn"];
+
+       NSLog(@"[GUI] Teleported with coordinates: %f, %f, %f", latitude, longitude, [defaults doubleForKey:@"Altitude"]);
     }
     else{
-	[defaults setBool:NO forKey:@"TeleporterOn"];
-	NSLog(@"[GUI] set buttonOn to NO");
+	   [defaults setBool:NO forKey:@"TeleporterOn"];
+	   NSLog(@"[GUI] set buttonOn to NO");
     }
 
     [defaults synchronize];
