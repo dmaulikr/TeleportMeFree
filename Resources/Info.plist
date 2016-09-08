@@ -9,7 +9,7 @@
 	iPhoneOS
     );
     CFBundleVersion = 1.0;
-    NSLocationWhenInUseUsageDescription = "iTeleport is easier to use if it has your location!";
+    NSLocationWhenInUseUsageDescription = "Enable to see location on map";
     DTPlatformName = iphoneos;
     DTSDKName = iphoneos3.0;
     LSRequiresIPhoneOS = 1;
