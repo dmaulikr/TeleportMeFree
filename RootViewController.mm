@@ -17,6 +17,8 @@
      //UITextField *altitudeText;
 
      BOOL mapZoom;
+
+     UIButton *altitudeButton;
 }
 
     @synthesize validLatitude;
@@ -113,20 +115,31 @@
     UIView *bottomView = [[UIView alloc] initWithFrame:CGRectMake(0, screenHeight - toolbarHeight, screenWidth, toolbarHeight)];
     bottomView.backgroundColor = [UIColor blueColor];
 
-    onSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(screenWidth/2,screenHeight - toolbarHeight,sidebarWidth,toolbarHeight)];
+    //---Add teleporter switch---
+    onSwitch = [[UISwitch alloc] initWithFrame:CGRectMake(screenWidth * 0.66,screenHeight - toolbarHeight,screenWidth/3,toolbarHeight)];
     [onSwitch setOnTintColor:[UIColor redColor]];
     [onSwitch addTarget:self action:@selector(setState:) forControlEvents:UIControlEventValueChanged];
     onSwitch.enabled = YES;
     [onSwitch setOn:[defaults boolForKey:@"TeleporterOn"]];
     
+    //---Add get altitude button---
+    altitudeButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    altitudeButton.frame = CGRectMake(screenWidth * 0.33, screenHeight - toolbarHeight, screenWidth/3, toolbarHeight);
+    [altitudeButton setTitle:@"Altitude" forState:UIControlStateNormal];
+    UIImage *btnImage = [UIImage imageNamed:@"refresh.png"];
+    [altitudeButton setImage:btnImage forState:UIControlStateNormal];
+    [altitudeButton addTarget:self action:@selector(refreshAltitude:) forControlEvents:UIControlEventTouchDown];
+
     [self.view addSubview:bottomView];
     [self.view addSubview:onSwitch];
+    [self.view addSubview:altitudeButton];
     [bottomView release];
     [onSwitch release];
 
 
 }
 
+//-----Sidebar functions------
 /*  @name: hideKeyboard
     @param:  none
     @return: Yes?
@@ -143,6 +156,63 @@
 {
     [tableView endEditing:YES];
 }
+
+
+
+
+//----Button functions----
+- (void)refreshAltitude:(UIButton *)button {
+
+    
+    NSString *coordinates = [NSString stringWithFormat:@"[{\"lat\":%.6f,\"lon\":%.6f}]",latitude,longitude];
+    NSLog(@"[GUI] Coordinate string: %@", coordinates);
+    NSDictionary *dict = @{@"range" : @"false",
+                           @"shape" : coordinates};
+
+    NSError *error = nil;
+    NSData *json = nil;
+    NSString *jsonString = nil;
+    if ([NSJSONSerialization isValidJSONObject:dict])
+    {
+        // Serialize the dictionary
+        json = [NSJSONSerialization dataWithJSONObject:dict options:0 error:&error];
+
+        if (json != nil && error == nil)
+            jsonString = [[NSString alloc] initWithData:json encoding:NSUTF8StringEncoding];
+        else 
+        {
+            NSLog(@"[GUI] Something wrong with janoy");
+            return;
+        }
+    }
+
+    NSString *requestString = [NSString stringWithFormat:@"elevation.mapzen.com/height?json=%@&id=test&api_key=elevation-HWNtq5x", jsonString];
+    
+    //this is stupid
+    requestString = [requestString stringByReplacingOccurrencesOfString:@"\\" withString:@""];
+    requestString = [requestString stringByReplacingOccurrencesOfString:@"\"false\"" withString:@"false"];
+    requestString = [requestString stringByReplacingOccurrencesOfString:@"\"[" withString:@"["];
+    requestString = [requestString stringByReplacingOccurrencesOfString:@"]\"" withString:@"]"];
+
+    NSLog(@"[GUI] Request string: %@", requestString);
+
+
+
+/*
+    NSMutableURLRequest *request = [[NSMutableURLRequest alloc] init];
+    [request setURL:[NSURL URLWithString:@"http://YourURL.com/FakeURL/PARAMETERS"]];
+    [request setHTTPMethod:@"GET"];
+
+    NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
+    [[session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
+    NSString *requestReply = [[NSString alloc] initWithData:data encoding:NSASCIIStringEncoding];
+    NSLog(@"requestReply: %@", requestReply);
+}] resume];*/
+}
+
+
+
+
 
 //----Begin mapview stuf----------
 
