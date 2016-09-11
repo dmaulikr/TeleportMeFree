@@ -3,7 +3,6 @@
 
 @implementation RootViewController {
      NSUserDefaults *defaults;
-     NSTimer *_updateUITimer;
 
      CGFloat screenWidth;
      CGFloat screenHeight;
@@ -14,7 +13,7 @@
 
      UITextField *latitudeText;
      UITextField *longitudeText;
-     //UITextField *altitudeText;
+     UITextField *altitudeText;
 
      BOOL mapZoom;
 
@@ -186,7 +185,7 @@
         }
     }
 
-    NSString *requestString = [NSString stringWithFormat:@"elevation.mapzen.com/height?json=%@&id=test&api_key=elevation-HWNtq5x", jsonString];
+    NSString *requestString = [NSString stringWithFormat:@"http://elevation.mapzen.com/height?json=%@&id=test&api_key=elevation-HWNtq5x", jsonString];
     
     //this is stupid
     requestString = [requestString stringByReplacingOccurrencesOfString:@"\\" withString:@""];
@@ -196,18 +195,37 @@
 
     NSLog(@"[GUI] Request string: %@", requestString);
 
-
-
-/*
+    requestString = [requestString stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];    
     NSMutableURLRequest *request = [[NSMutableURLRequest alloc] init];
-    [request setURL:[NSURL URLWithString:@"http://YourURL.com/FakeURL/PARAMETERS"]];
+    [request setURL:[NSURL URLWithString:requestString]];
     [request setHTTPMethod:@"GET"];
 
     NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
+
     [[session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-    NSString *requestReply = [[NSString alloc] initWithData:data encoding:NSASCIIStringEncoding];
-    NSLog(@"requestReply: %@", requestReply);
-}] resume];*/
+        NSString *requestReply = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+        if (error != nil)
+        {
+            NSLog(@"Error was %@", [error description]);
+            return;
+        }
+    
+        NSLog(@"requestReply: %@", requestReply);
+        NSDictionary *theJson = [NSJSONSerialization JSONObjectWithData:data
+                                      options:NSJSONReadingMutableContainers 
+                                        error:&error];
+        NSString *height = [[theJson objectForKey:@"height"] objectAtIndex: 0];
+        NSLog(@"[GUI] Height from received JSON: %@", height);
+
+        dispatch_async(dispatch_get_main_queue(), 
+        ^{
+            altitude = [height doubleValue];
+            [self updateUIAltitude];
+
+        });
+
+    }] resume];
+
 }
 
 
@@ -216,7 +234,7 @@
 
 //----Begin mapview stuf----------
 
-- (void)updateUI {
+- (void)updateUILatLong {
     NSLog(@"[GUI] Update GUI called. Map coordinates: %f, %f", mapView.centerCoordinate.latitude, mapView.centerCoordinate.longitude);
     latitudeText.text = [NSString stringWithFormat:@"%.8f", mapView.centerCoordinate.latitude];
     longitudeText.text = [NSString stringWithFormat:@"%.8f", mapView.centerCoordinate.longitude];
@@ -232,6 +250,16 @@
     teleportReady = YES;
     onSwitch.enabled = YES;
     validLatitude = validLongitude = YES;
+
+}
+
+-(void)updateUIAltitude {
+    NSLog(@"[GUI] Update Altitude called. Altitude: %f", altitude);
+    altitudeText.text = [NSString stringWithFormat:@"%.4f", altitude];
+    [defaults setDouble:altitude forKey:@"Altitude"];
+    [defaults setObject:@YES forKey:@"CoordinatesUpdated"];
+    [defaults synchronize];
+    validAltitude = YES;
 
 }
 
@@ -255,14 +283,14 @@ static BOOL mapChangedFromUserInteraction = NO;
     mapChangedFromUserInteraction = [self mapViewRegionDidChangeFromUserInteraction];
 
     if (mapChangedFromUserInteraction) {
-        [self updateUI];
+        [self updateUILatLong];
     }
 }
 
 - (void)mapView:(MKMapView *)mapView regionDidChangeAnimated:(BOOL)animated
 {
     if (mapChangedFromUserInteraction) {
-        [self updateUI];
+        [self updateUILatLong];
     }
 }
 
@@ -333,6 +361,7 @@ static BOOL mapChangedFromUserInteraction = NO;
                 case 2:
                     playerTextField.placeholder = @"To the moon";
                     playerTextField.tag = ALTITUDE;
+                    altitudeText = playerTextField;
                     break;
 
                 case 3:
