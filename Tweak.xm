@@ -86,11 +86,8 @@ HBPreferences *preferences;
       }
 
     - (CLLocationCoordinate2D)coordinate {
-        //NSLog(@"[TWEAK] Coordinates from prefs (variables): %f, %f, %f", targetX, targetY, targetZ);
-        //NSLog(@"[TWEAK] Coordinates from prefs (RAW): %f, %f, %f", [preferences doubleForKey:kHBCBPreferencesLatitudeKey], [preferences doubleForKey:kHBCBPreferencesLongitudeKey], [preferences doubleForKey:kHBCBPreferencesAltitudeKey]);
         
         if (!enabled) {
-            //NSLog(@"[TWEAK] Tweak detected BUTTON OFF.");
             return %orig;
         }
 

@@ -106,7 +106,9 @@
     tableView.layer.masksToBounds = YES;
     UITapGestureRecognizer *gestureRecognizer = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(hideKeyboard)];
     [tableView addGestureRecognizer:gestureRecognizer];
+    gestureRecognizer.cancelsTouchesInView = NO;
     [self.view addSubview:tableView];
+
     [gestureRecognizer release];
 
     //---Bottom toolbar-----
@@ -153,18 +155,17 @@
 
 - (void)hideKeyboard
 {
-    [tableView endEditing:YES];
+    [latitudeText resignFirstResponder];
+    [longitudeText resignFirstResponder];
+    [altitudeText resignFirstResponder];
 }
-
-
-
 
 //----Button functions----
 - (void)refreshAltitude:(UIButton *)button {
 
     
     NSString *coordinates = [NSString stringWithFormat:@"[{\"lat\":%.6f,\"lon\":%.6f}]",latitude,longitude];
-    NSLog(@"[GUI] Coordinate string: %@", coordinates);
+    //NSLog(@"[GUI] Coordinate string: %@", coordinates);
     NSDictionary *dict = @{@"range" : @"false",
                            @"shape" : coordinates};
 
@@ -193,7 +194,7 @@
     requestString = [requestString stringByReplacingOccurrencesOfString:@"\"[" withString:@"["];
     requestString = [requestString stringByReplacingOccurrencesOfString:@"]\"" withString:@"]"];
 
-    NSLog(@"[GUI] Request string: %@", requestString);
+    //NSLog(@"[GUI] Request string: %@", requestString);
 
     requestString = [requestString stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];    
     NSMutableURLRequest *request = [[NSMutableURLRequest alloc] init];
@@ -203,19 +204,19 @@
     NSURLSession *session = [NSURLSession sessionWithConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
 
     [[session dataTaskWithRequest:request completionHandler:^(NSData *data, NSURLResponse *response, NSError *error) {
-        NSString *requestReply = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+        //NSString *requestReply = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
         if (error != nil)
         {
             NSLog(@"Error was %@", [error description]);
             return;
         }
     
-        NSLog(@"requestReply: %@", requestReply);
+        //NSLog(@"requestReply: %@", requestReply);
         NSDictionary *theJson = [NSJSONSerialization JSONObjectWithData:data
                                       options:NSJSONReadingMutableContainers 
                                         error:&error];
         NSString *height = [[theJson objectForKey:@"height"] objectAtIndex: 0];
-        NSLog(@"[GUI] Height from received JSON: %@", height);
+       // NSLog(@"[GUI] Height from received JSON: %@", height);
 
         dispatch_async(dispatch_get_main_queue(), 
         ^{
